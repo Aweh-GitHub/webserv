@@ -1,24 +1,29 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   Responce.hpp                                       :+:      :+:    :+:   */
+/*   Get.cpp                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/08/31 19:22:05 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/03 09:45:46 by lupayet          ###   ########.fr       */
+/*   Created: 2026/09/04 08:02:25 by lupayet           #+#    #+#             */
+/*   Updated: 2026/09/04 10:11:42 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#pragma once
-
-#include "webserv.hpp"
 #include "Client.hpp"
-/*
-class   Responce
-{
-	public:
-		int	build(std::string &request, std::string &responce);
-};*/
 
-//int	build(Request &request, std::string &responce);
+bool Client::handleGet(std::string &path)
+{
+	std::string	err("./template/404.htlm");
+	std::string	body;
+	if (!getFileContent(path, body))
+	{
+		_res += getHeader(404, "text/html", body.size());
+		getFileContent(err, body);
+		_res += body;
+		return (false);
+	}
+	_res += getHeader(200, getMimeType(path), body.size());
+	_res += body;
+	return (true);
+}

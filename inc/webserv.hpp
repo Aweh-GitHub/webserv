@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/26 00:39:55 by lupayet           #+#    #+#             */
-/*   Updated: 2026/08/27 01:35:41 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/09/04 09:48:44 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,3 +36,9 @@
 #include <dirent.h>
 #include <poll.h>
 #include <vector>
+#include <map>
+
+std::string	ft_itoa(int n);
+int			getFileContent(std::string &filename, std::string &out);
+std::string getValue(const std::string& key, const std::map<std::string, std::string>& map);
+std::string getMimeType(const std::string& path);

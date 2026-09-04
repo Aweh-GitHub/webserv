@@ -6,7 +6,7 @@
 #    By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/07/25 23:52:35 by lupayet           #+#    #+#              #
-#    Updated: 2026/09/03 14:25:02 by lupayet          ###   ########.fr        #
+#    Updated: 2026/09/04 08:35:56 by lupayet          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -20,8 +20,10 @@ OBJ_D = ./obj/
 SRC_D = ./src/
 INC = ./inc/
 
-SRC = main.cpp AAction.cpp Client.cpp Server.cpp Socket.cpp Responce.cpp WebPage.cpp Header.cpp
-HEADER = webserv.hpp AAction.hpp Client.hpp Server.hpp Socket.hpp Responce.hpp WebPage.hpp
+SRC = main.cpp AAction.cpp Client.cpp Server.cpp Socket.cpp Responce.cpp \
+	WebPage.cpp Header.cpp Cgi.cpp Index.cpp Get.cpp Redirection.cpp Helper.cpp
+
+HEADER = webserv.hpp AAction.hpp Client.hpp Server.hpp Socket.hpp WebPage.hpp
 
 OBJ = $(addprefix $(OBJ_D), $(SRC:.cpp=.o))
 DEPS = $(addprefix $(INC), $(HEADER))
@@ -30,6 +32,7 @@ all : $(NAME)
 
 $(OBJ_D):
 	@mkdir -p $(OBJ_D)
+
 $(OBJ_D)%.o: $(SRC_D)%.cpp $(DEPS)
 	$(GG) -I$(INC) -c $< -o $@
 

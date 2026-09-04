@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 01:05:24 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/04 07:38:32 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/09/04 10:11:13 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,7 +43,9 @@ class Client : public AAction
 		bool	parseHeaderLine(const std::string &line);
 		bool	parseHeader();
 		void	badRequestRes();
-		bool	handleGet();
+		std::string	getHeader(int code, std::string type, size_t length);
+		bool	handleGet(std::string &path);
+		bool	handleIndex(std::string &path);
 		std::map<std::string, std::string> _headers;
 		rStatus		_status;
 		std::string _request;
@@ -55,6 +57,6 @@ class Client : public AAction
 		static const std::map<int, std::string> _redirCode;
 		std::string	redirMap(int code);
 		std::string	redirect(int code);
-		std::string	indexDir(std::string path);
+		std::string	indexDir(std::string &path);
 		Client();
 };

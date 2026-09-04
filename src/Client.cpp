@@ -6,13 +6,12 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 01:52:12 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/03 14:34:31 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/09/04 08:46:12 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Client.hpp"
 #include "Server.hpp"
-#include "Responce.hpp"
 #include <cstdlib>
 
 const std::map<int, std::string> Client::_redirCode = Client::createRedirCode();
@@ -114,7 +113,6 @@ void	Client::handleRequest()
 	//_res = _request;
 	build();
 	//std::cout << _res << std::endl;
-	_status = SENDING;
 	updatePoll(_fd);
 }
 
