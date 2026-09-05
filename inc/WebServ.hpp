@@ -1,7 +1,7 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   Server.hpp                                         :+:      :+:    :+:   */
+/*   WebServ.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
@@ -14,6 +14,7 @@
 
 #include "webserv.hpp"
 #include "AAction.hpp"
+#include "Config.hpp"
 #include <vector>
 
 /*enum	Action
@@ -28,11 +29,11 @@ struct ListeningSocket
 	sockaddr_in addr;
 };
 
-class Server
+class WebServ
 {
 	public:
-		Server();
-		~Server();
+		WebServ();
+		~WebServ();
 		int		newSocket(sa_family_t sFamily, in_port_t sPort, in_addr_t sAddr);
 		//AAction	*newAction(int fd, Action type);
 		static int		addToPoll(int fd);
@@ -45,9 +46,10 @@ class Server
 		//void	reload();
 		static std::vector<pollfd> _pollFds;
 		static std::vector<AAction*> _A;
-		static int		_closeConnection;
+		static int				_closeConnection;
 		static bool				_isRunning;
+		static Config			*_config;
 	private:
-		Server(const Server &cpy);
-		Server	&operator=(const Server &other);
+		WebServ(const WebServ &cpy);
+		WebServ	&operator=(const WebServ &other);
 };

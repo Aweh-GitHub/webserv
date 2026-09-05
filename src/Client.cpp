@@ -6,12 +6,12 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 01:52:12 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/04 08:46:12 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/09/05 14:15:15 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Client.hpp"
-#include "Server.hpp"
+#include "WebServ.hpp"
 #include <cstdlib>
 
 const std::map<int, std::string> Client::_redirCode = Client::createRedirCode();
@@ -59,10 +59,10 @@ Client::~Client()
 
 static void	updatePoll(int fd)
 {
-	for ( unsigned long int i = 0; i < Server::_pollFds.size(); i++)
+	for ( unsigned long int i = 0; i < WebServ::_pollFds.size(); i++)
 	{
-		if (fd == Server::_pollFds[i].fd)
-			Server::_pollFds[i].events = POLLOUT;
+		if (fd == WebServ::_pollFds[i].fd)
+			WebServ::_pollFds[i].events = POLLOUT;
 	}
 }
 
@@ -98,7 +98,7 @@ void	Client::getRequest()
 	else if (n == 0)
 	{
 		close(_fd);
-		Server::closeConnection() = _fd;
+		WebServ::closeConnection() = _fd;
 	}
 	/*
 	else
@@ -139,7 +139,7 @@ void	Client::action()
 	else if (_status == TERMINATED)
 	{
 		close(_fd);
-		Server::_closeConnection = _fd;
+		WebServ::_closeConnection = _fd;
 	}
 }
 

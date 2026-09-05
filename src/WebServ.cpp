@@ -1,25 +1,26 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   Server.cpp                                         :+:      :+:    :+:   */
+/*   WebServ.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/25 17:19:26 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/03 14:25:23 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/09/05 14:51:40 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "Server.hpp"
+#include "WebServ.hpp"
 #include "Socket.hpp"
 #include "Client.hpp"
 
-std::vector<pollfd> Server::_pollFds;
-std::vector<AAction*> Server::_A;
-int	Server::_closeConnection = 0;
-bool Server::_isRunning = true;
+std::vector<pollfd> WebServ::_pollFds;
+std::vector<AAction*> WebServ::_A;
+int	WebServ::_closeConnection = 0;
+bool WebServ::_isRunning = true;
+Config	*WebServ::_config = NULL;
 
-int	Server::newSocket(sa_family_t sFamily, in_port_t sPort, in_addr_t sAddr)
+int	WebServ::newSocket(sa_family_t sFamily, in_port_t sPort, in_addr_t sAddr)
 {
 	int			fd;
 	int			opt = 1;
@@ -42,7 +43,7 @@ int	Server::newSocket(sa_family_t sFamily, in_port_t sPort, in_addr_t sAddr)
 	return (std::cout << "New socket (" << sPort << ")" << "created" << std::endl, fd);
 }
 /*
-AAction	*Server::newAction(int fd, Action type)
+AAction	*WebServ::newAction(int fd, Action type)
 {
 	AAction *action = NULL;
 
@@ -53,7 +54,7 @@ AAction	*Server::newAction(int fd, Action type)
 	return (action);
 }*/
 
-int	Server::addToPoll(int fd)
+int	WebServ::addToPoll(int fd)
 {
 	pollfd	p;
 	p.fd = fd;
@@ -63,17 +64,17 @@ int	Server::addToPoll(int fd)
 	return (fd);
 }
 
-void	Server::addToAction(AAction *a)
+void	WebServ::addToAction(AAction *a)
 {
 	_A.push_back(a);
 }
 
-int	&Server::closeConnection()
+int	&WebServ::closeConnection()
 {
 	return (_closeConnection);
 }
 
-int	Server::init()
+int	WebServ::init()
 {
 	int	socket80 = newSocket(AF_INET, 80, INADDR_ANY);
 	if (!socket80)
@@ -84,7 +85,7 @@ int	Server::init()
 	return (1);
 }
 
-void	Server::quit()
+void	WebServ::quit()
 {
 	for (long unsigned int i = 0; i < _A.size(); i++)
 		delete _A[i];
@@ -92,11 +93,11 @@ void	Server::quit()
 	_isRunning = false;
 }
 
-Server::Server() {}
+WebServ::WebServ() {}
 
-Server::~Server()
+WebServ::~WebServ()
 {
 	#if DEBUG
-	std::cout << "Server destructor called" << std::endl;
+	std::cout << "WebServ destructor called" << std::endl;
 	#endif
 }

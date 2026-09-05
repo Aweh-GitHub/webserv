@@ -6,12 +6,12 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 01:12:14 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/03 14:26:11 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/09/05 14:15:37 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Socket.hpp"
-#include "Server.hpp"
+#include "WebServ.hpp"
 #include "Client.hpp"
 
 Socket::Socket(int fd, int port) : _port(port)
@@ -60,8 +60,8 @@ void	Socket::action()
 	}
 	fcntl(cfd, F_SETFL, O_NONBLOCK);
 	r = new Client(cfd, _port);
-	Server::addToPoll(cfd);
-	Server::addToAction(r);
+	WebServ::addToPoll(cfd);
+	WebServ::addToAction(r);
 }
 
 int Socket::getPort()

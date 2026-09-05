@@ -6,25 +6,39 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/26 00:36:24 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/04 08:18:48 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/09/05 14:46:55 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "webserv.hpp"
-#include "Server.hpp"
+#include "WebServ.hpp"
+#include "Colors.hpp"
+#include "Config.hpp"
 
 void handleSignal(int sig)
 {
     if (sig == SIGINT)
 	{
-		Server::quit();
+		WebServ::quit();
 	}
 }
 
-int	main()
+int	main(int ac, char **av)
 {
-	Server	srv;
+	WebServ	srv;
 
+	if (ac != 2)
+		return (std::cerr << RED << "Error: requires ./program <config_file>" << RST << std::endl, 1);
+	std::string pathConfigFile(av[1]);
+	
+	try
+	{
+		WebServ::_config = new Config(pathConfigFile);
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << RED << e.what() << RST << '\n';
+	}
 	signal(SIGINT, handleSignal);
 	if (!srv.init())
 		return 1;
