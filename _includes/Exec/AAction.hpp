@@ -3,16 +3,16 @@
 /*                                                        :::      ::::::::   */
 /*   AAction.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
+/*   By: thantoni <thantoni@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/26 20:43:31 by lupayet           #+#    #+#             */
-/*   Updated: 2026/08/27 09:11:51 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/09/09 12:45:48 by thantoni         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
-#include "webserv.hpp"
+#include "core_webserv.hpp"
 
 class AAction
 {

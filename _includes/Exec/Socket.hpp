@@ -3,14 +3,14 @@
 /*                                                        :::      ::::::::   */
 /*   Socket.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
+/*   By: thantoni <thantoni@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 00:51:43 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/02 05:57:29 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/09/09 12:47:10 by thantoni         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "webserv.hpp"
+#include "core_webserv.hpp"
 #include "AAction.hpp"
 
 class	Socket : public AAction

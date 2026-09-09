@@ -3,80 +3,75 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+         #
+#    By: thantoni <thantoni@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
-#    Created: 2026/07/25 23:52:35 by lupayet           #+#    #+#              #
-#    Updated: 2026/09/05 14:44:00 by lupayet          ###   ########.fr        #
+#    Created: 2026/09/09 12:18:45 by thantoni          #+#    #+#              #
+#    Updated: 2026/09/09 12:47:42 by thantoni         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
-NAME = webserv
+
 
 DEBUG ?= 1
 
-GG = c++ -Wall -Werror -Wextra -std=c++98 -g -DDEBUG=$(DEBUG)
 
-OBJ_D = ./obj/
-SRC_D = ./src/
-CFG_D = ./Config/
-INC = ./inc/
-INCLUDES = ./_includes/
 
-CXXFLAGS = -I$(INC) -I$(INCLUDES)
+NAME					=	webserv
 
-SRC = main.cpp AAction.cpp Client.cpp WebServ.cpp Socket.cpp Responce.cpp \
-	WebPage.cpp Header.cpp Cgi.cpp Index.cpp Get.cpp Redirection.cpp Helper.cpp
+COMPILE					=	c++
+FLAGS					=	-Wall -Wextra -Werror -std=c++98 -DDEBUG=$(DEBUG)
 
-HEADER = webserv.hpp AAction.hpp Client.hpp WebServ.hpp Socket.hpp WebPage.hpp
+INCLUDE_PATH__ROOT		=	_includes
+INCLUDE_PATH__CONFIG	=	_includes/Config
+INCLUDE_PATH__EXEC		=	_includes/Exec
+INCLUDES				=	-I $(INCLUDE_PATH__ROOT) -I $(INCLUDE_PATH__CONFIG) -I $(INCLUDE_PATH__EXEC)
 
-CFG_SRC = Config.cpp \
-	ConfigBuilder.cpp \
-	Location.cpp \
-	LocationBuilder.cpp \
-	Server.cpp \
-	ServerBuilder.cpp \
-	__internal__.cpp
+RM						=	rm -rf
 
-INCLUDE_HEADER = Colors.hpp \
-	ConfigBuilder.hpp \
-	Config.hpp \
-	LocationBuilder.hpp \
-	Location.hpp \
-	ServerBuilder.hpp \
-	Server.hpp \
-	__internal__.hpp
+SRCS__CONFIG			=														\
+							src/Config/Config.cpp								\
+							src/Config/ConfigBuilder.cpp						\
+							src/Config/Server.cpp								\
+							src/Config/ServerBuilder.cpp						\
+							src/Config/Location.cpp								\
+							src/Config/LocationBuilder.cpp						\
+							src/Config/__internal__.cpp							\
 
-OBJ = $(addprefix $(OBJ_D), $(SRC:.cpp=.o)) \
-	$(addprefix $(OBJ_D), $(CFG_SRC:.cpp=.o))
+SRCS__EXEC				=														\
+							src/Exec/AAction.cpp								\
+							src/Exec/Cgi.cpp									\
+							src/Exec/Client.cpp									\
+							src/Exec/Get.cpp									\
+							src/Exec/Header.cpp									\
+							src/Exec/Helper.cpp									\
+							src/Exec/Index.cpp									\
+							src/Exec/Redirection.cpp							\
+							src/Exec/Response.cpp								\
+							src/Exec/Socket.cpp									\
+							src/Exec/WebPage.cpp								\
+							src/Exec/WebServ.cpp								\
 
-DEPS = $(addprefix $(INC), $(HEADER)) \
-	$(addprefix $(INCLUDES), $(INCLUDE_HEADER))
+SRCS			=																\
+							src/main.cpp										\
+							$(SRCS__CONFIG)										\
+							$(SRCS__EXEC)										\
+
+OBJS			= $(SRCS:.cpp=.o)
 
 all: $(NAME)
 
-$(OBJ_D):
-	@mkdir -p $(OBJ_D)
+$(NAME): $(OBJS)
+	$(COMPILE) $(FLAGS) $(OBJS) -o $(NAME)
 
-# src/*.cpp -> obj/*.o
-$(addprefix $(OBJ_D), $(SRC:.cpp=.o)): $(OBJ_D)%.o: $(SRC_D)%.cpp $(DEPS)
-	$(GG) $(CXXFLAGS) -c $< -o $@
-
-# Config/*.cpp -> obj/*.o
-$(addprefix $(OBJ_D), $(CFG_SRC:.cpp=.o)): $(OBJ_D)%.o: $(CFG_D)%.cpp $(DEPS)
-	$(GG) $(CXXFLAGS) -c $< -o $@
-
-$(NAME): $(OBJ)
-	$(GG) $(CXXFLAGS) $(OBJ) -o $(NAME)
+%.o: %.cpp
+	$(COMPILE) $(FLAGS) $(INCLUDES) -c $< -o $@
 
 clean:
-	rm -f $(OBJ)
+	$(RM) $(OBJS)
 
 fclean: clean
-	rm -f $(NAME)
+	$(RM) $(NAME)
 
 re: fclean all
 
-dev: re
-	@make clean 1>/dev/null
-
-.PHONY: all clean fclean re dev
+.PHONY: all clean fclean re

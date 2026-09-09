@@ -3,14 +3,14 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
+/*   By: thantoni <thantoni@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/26 00:36:24 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/05 14:46:55 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/09/09 12:44:52 by thantoni         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "webserv.hpp"
+#include "core_webserv.hpp"
 #include "WebServ.hpp"
 #include "Colors.hpp"
 #include "Config.hpp"

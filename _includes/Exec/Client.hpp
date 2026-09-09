@@ -3,16 +3,16 @@
 /*                                                        :::      ::::::::   */
 /*   Client.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
+/*   By: thantoni <thantoni@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 01:05:24 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/04 10:11:13 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/09/09 12:45:58 by thantoni         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
-#include "webserv.hpp"
+#include "core_webserv.hpp"
 #include "AAction.hpp"
 #include <map>
 
