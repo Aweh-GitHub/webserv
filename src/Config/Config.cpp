@@ -6,14 +6,14 @@
 /*   By: thantoni <thantoni@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/01 19:18:33 by thantoni          #+#    #+#             */
-/*   Updated: 2026/09/01 20:31:20 by thantoni         ###   ########.fr       */
+/*   Updated: 2026/09/10 14:54:20 by thantoni         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Config.hpp"
 #include <iostream>
 
-Config::Config(const std::string& pathConfigFile) : _pathConfigFile(pathConfigFile), _allServers()
+Config::Config() : _allServers(), _isInitialized(false)
 {
 }
 
@@ -34,10 +34,20 @@ void	Config::AddServer(const Server server)
 
 void	Config::Print() const
 {
-	std::cout << "file: " << this->_pathConfigFile << std::endl;
+	std::cout << "CONFIG FILE: " << std::endl;
 	for (size_t i = 0; i < this->_allServers.size(); i++)
 	{
 		this->_allServers[i].Print();
 	}
 	
+}
+
+void	Config::ToggleInitialized()
+{
+	this->_isInitialized = true;
+}
+
+bool	Config::GetIsInitialized()
+{
+	return (this->_isInitialized);
 }

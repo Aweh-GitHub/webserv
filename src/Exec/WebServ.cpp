@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   WebServ.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
+/*   By: thantoni <thantoni@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/25 17:19:26 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/05 14:51:40 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/09/10 14:54:49 by thantoni         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,7 @@ std::vector<pollfd> WebServ::_pollFds;
 std::vector<AAction*> WebServ::_A;
 int	WebServ::_closeConnection = 0;
 bool WebServ::_isRunning = true;
-Config	*WebServ::_config = NULL;
+Config	WebServ::_config;
 
 int	WebServ::newSocket(sa_family_t sFamily, in_port_t sPort, in_addr_t sAddr)
 {
@@ -76,6 +76,8 @@ int	&WebServ::closeConnection()
 
 int	WebServ::init()
 {
+	if (!this->_config.GetIsInitialized())
+		return (0);
 	int	socket80 = newSocket(AF_INET, 80, INADDR_ANY);
 	if (!socket80)
 		return (0);

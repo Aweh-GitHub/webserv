@@ -6,10 +6,11 @@
 /*   By: thantoni <thantoni@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/30 14:54:25 by thantoni          #+#    #+#             */
-/*   Updated: 2026/09/01 20:44:14 by thantoni         ###   ########.fr       */
+/*   Updated: 2026/09/10 15:05:42 by thantoni         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "ConfigBuilder.hpp"
 #include "LocationBuilder.hpp"
 #include "__internal__.hpp"
 #include <iostream>
@@ -22,13 +23,14 @@ Location	LocationBuilder::ParseLocation(std::ifstream& file)
 	std::map<std::string, void (*)(Location&, std::string)> handlers;
 
 	handlers = getParseHandlers();
-	for (size_t i = 0; std::getline(file, line) && !isLineEndBracket(line); i++)
+	while (std::getline(file, line) && !isLineEndBracket(line))
 	{
 		std::string	key, value;
 		std::map<std::string, void (*)(Location&, std::string)>::iterator handlerIt;
 		void (*handler)(Location&, std::string);
 
 		(void)handler;
+		++ConfigBuilder::LineIndex;
 		if (isCommentLine(line))
 			continue;
 		lineParseKeyValue(line, key, value);
@@ -37,7 +39,7 @@ Location	LocationBuilder::ParseLocation(std::ifstream& file)
 		// TODO: store in ConfigBuilder the line count
 		//
 		if (handlerIt == handlers.end())
-			throw std::runtime_error("Error: PARSE_LOCATION, at line (" + toString(i) + ") unrecognized key \"" + key + "\".");
+			throw std::runtime_error("Error: PARSE_LOCATION, at line (" + toString(ConfigBuilder::LineIndex) + ") unrecognized key \"" + key + "\".");
 		handler = handlerIt->second;
 		(*handler)(location, value);
 	}

@@ -6,14 +6,14 @@
 /*   By: thantoni <thantoni@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/26 00:36:24 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/09 12:44:52 by thantoni         ###   ########.fr       */
+/*   Updated: 2026/09/10 14:38:36 by thantoni         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "core_webserv.hpp"
 #include "WebServ.hpp"
 #include "Colors.hpp"
-#include "Config.hpp"
+#include "ConfigBuilder.hpp"
 
 void handleSignal(int sig)
 {
@@ -33,7 +33,7 @@ int	main(int ac, char **av)
 	
 	try
 	{
-		WebServ::_config = new Config(pathConfigFile);
+		WebServ::_config = ConfigBuilder::ParseConfig(pathConfigFile);
 	}
 	catch(const std::exception& e)
 	{
@@ -41,7 +41,7 @@ int	main(int ac, char **av)
 	}
 	signal(SIGINT, handleSignal);
 	if (!srv.init())
-		return 1;
+		return (1);
 	while (srv._isRunning)
 	{
 		poll(srv._pollFds.data(), srv._pollFds.size(), -1);

@@ -10,6 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "ConfigBuilder.hpp"
 #include "ServerBuilder.hpp"
 #include "Colors.hpp"
 #include "__internal__.hpp"
@@ -26,18 +27,19 @@ Server	ServerBuilder::ParseServer(std::ifstream& file)
 
 	std::string line;
 	
-	for (size_t i = 0; std::getline(file, line) && !isLineEndBracket(line); i++)
+	while (std::getline(file, line) && !isLineEndBracket(line))
 	{
 		std::string	key, value;
 		std::map<std::string, void (*)(Server&, std::string, std::ifstream& file)>::iterator handlerIt;
 		void (*handler)(Server&, std::string, std::ifstream& file);
 
+		++ConfigBuilder::LineIndex;
 		if (isCommentLine(line))
 			continue;
 		lineParseKeyValue(line, key, value);
 		handlerIt = handlers.find(key);
 		if (handlerIt == handlers.end())
-			throw std::runtime_error("Error: PARSE_SERVER, at line (" + toString(i) + ") unrecognized key \"" + key + "\".");
+			throw std::runtime_error("Error: PARSE_SERVER, at line (" + toString(ConfigBuilder::LineIndex) + ") unrecognized key \"" + key + "\".");
 		handler = handlerIt->second;
 		(*handler)(server, value, file);
 	}
@@ -65,14 +67,12 @@ std::map<std::string, void (*)(Server&, std::string, std::ifstream& file)>	Serve
 void	ServerBuilder::handleParse_HostIp(Server& server, std::string value, std::ifstream& file)
 {
 	(void)file;
-	std::cout << "handleParse_HostIp: " << value << std::endl;
 	server.SetHostIp(lineStripQuotes(value));
 }
 
 void	ServerBuilder::handleParse_ListenPort(Server& server, std::string value, std::ifstream& file)
 {
 	(void)file;
-	std::cout << "handleParse_ListenPort: " << value << std::endl;
 	server.SetListenPort(toSize(value));
 }
 
@@ -80,7 +80,6 @@ void	ServerBuilder::handleParse_ServerDomains(Server& server, std::string value,
 {
 	std::vector<std::string> domains;
 	
-	std::cout << "handleParse_ServerDomains: " << value << std::endl;
 	(void)file;
 	domains = split(value, ',');
 	for (size_t i = 0; i < domains.size(); i++)
@@ -101,7 +100,6 @@ void	ServerBuilder::handleParse_IndexFiles(Server& server, std::string value, st
 {
 	std::vector<std::string> indexFiles;
 	
-	std::cout << "handleParse_IndexFiles: " << value << std::endl;
 	(void)file;
 	indexFiles = split(value, ',');
 	for (size_t i = 0; i < indexFiles.size(); i++)
@@ -124,7 +122,6 @@ void	ServerBuilder::handleParse_ErrorPages(Server& server, std::string value, st
 	std::vector<std::string> args;
 	std::string errorPage;
 
-	std::cout << "handleParse_ErrorPages: " << value << std::endl;
 	(void)file;
 	args = split(value, ',');
 	errorPage = lineStripQuotes(*(--args.end()));
@@ -141,7 +138,6 @@ void	ServerBuilder::handleParse_Location(Server& server, std::string value, std:
 {
 	Location location;
 
-	std::cout << "handleParse_Location: " << value << std::endl;
 	if (value != "{")
 		throw std::runtime_error("Error: after 'location' key expected to get '{'");
 	location = LocationBuilder::ParseLocation(file);

@@ -48,7 +48,7 @@ class WebServ
 		static std::vector<AAction*> _A;
 		static int				_closeConnection;
 		static bool				_isRunning;
-		static Config			*_config;
+		static Config			_config;
 	private:
 		WebServ(const WebServ &cpy);
 		WebServ	&operator=(const WebServ &other);
