@@ -6,7 +6,7 @@
 /*   By: thantoni <thantoni@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/01 19:18:23 by thantoni          #+#    #+#             */
-/*   Updated: 2026/09/10 15:10:32 by thantoni         ###   ########.fr       */
+/*   Updated: 2026/09/12 17:48:54 by thantoni         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,7 +19,7 @@
 #include "Colors.hpp"
 #include "__internal__.hpp"
 
-int	ConfigBuilder::LineIndex = 1;
+int	ConfigBuilder::LineIndex = 0;
 
 Config	ConfigBuilder::ParseConfig(std::string& pathConfigFile)
 {
@@ -34,17 +34,17 @@ Config	ConfigBuilder::ParseConfig(std::string& pathConfigFile)
 
 	std::string line;
 	
-	ConfigBuilder::LineIndex = 1;
+	ConfigBuilder::LineIndex = 0;
 	while (std::getline(file, line))
 	{
 		std::string	key, value;
 
 		++ConfigBuilder::LineIndex;
-		if (isCommentLine(line))
+		if (isSkipLine(line))
 			continue;
 		lineParseKeyValue(line, key, value);
 		if (key != "server")
-			throw std::runtime_error("Error: PARSE_CONFIG, at line (" + toString(ConfigBuilder::LineIndex) + ") unrecognized key \"" + key + "\".");
+			throwLineError("PARSE_CONFIG, at line (" + toString(ConfigBuilder::LineIndex) + ") unrecognized key \"" + key + "\".");
 		handleParse_Server(config, value, file);
 	}
 	
@@ -58,7 +58,7 @@ void	ConfigBuilder::handleParse_Server(Config& config, std::string value, std::i
 	Server server;
 
 	if (value != "{")
-		throw std::runtime_error("Error: after 'server' key expected to get '{'");
+		throwLineError("After 'server' key expected to get '{'");
 	server = ServerBuilder::ParseServer(file);
 	config.AddServer(server);
 }

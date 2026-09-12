@@ -6,7 +6,7 @@
 /*   By: thantoni <thantoni@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/29 12:10:26 by thantoni          #+#    #+#             */
-/*   Updated: 2026/08/31 16:28:16 by thantoni         ###   ########.fr       */
+/*   Updated: 2026/09/12 14:55:19 by thantoni         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -57,8 +57,8 @@ const std::vector<std::string>		Location::GetIndexFiles() const { return (this->
 const std::set<std::string>			Location::GetAllowedMethods() const { return (this->_allowedMethods); }
 size_t								Location::GetClientMaxBodySize() const { return (this->_clientMaxBodySize); }
 bool								Location::GetAutoIndex() const { return (this->_autoIndex); }
-size_t								Location::GetReturnCode() const { return (this->_returnCode); }
-const std::string					Location::GetReturnPath() const { return (this->_returnPath); }
+size_t								Location::GetReturnCode() const { return (this->_redirectCode); }
+const std::string					Location::GetReturnPath() const { return (this->_redirectPath); }
 
 void	Location::SetName(const std::string name) { this->_name = name; }
 void	Location::SetPathRoot(const std::string pathRoot) { this->_pathRoot = pathRoot; }
@@ -74,5 +74,5 @@ void	Location::AddCGIExtension(const std::string ext, const std::string exec_pat
 }
 void	Location::SetClientMaxBodySize(const size_t clientMaxBodySize) { this->_clientMaxBodySize = clientMaxBodySize; }
 void	Location::SetAutoIndex(const bool autoIndex) { this->_autoIndex = autoIndex; }
-void	Location::SetReturnCode(const size_t returnCode) { this->_returnCode = returnCode; }
-void	Location::SetReturnPath(const std::string returnPath) { this->_returnPath = returnPath; }
+void	Location::SetRedirectCode(const size_t redirectCode) { this->_redirectCode = redirectCode; }
+void	Location::SetRedirectPath(const std::string redirectPath) { this->_redirectPath = redirectPath; }

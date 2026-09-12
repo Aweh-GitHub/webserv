@@ -6,7 +6,7 @@
 /*   By: thantoni <thantoni@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/29 12:08:54 by thantoni          #+#    #+#             */
-/*   Updated: 2026/08/31 16:27:37 by thantoni         ###   ########.fr       */
+/*   Updated: 2026/09/12 17:49:07 by thantoni         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,8 +45,8 @@ class Location
 		void						AddCGIExtension(const std::string ext, const std::string exec_path);
 		void						SetClientMaxBodySize(const size_t clientMaxBodySize);
 		void						SetAutoIndex(const bool autoIndex);
-		void						SetReturnCode(const size_t returnCode);
-		void						SetReturnPath(const std::string returnPath);
+		void						SetRedirectCode(const size_t redirectCode);
+		void						SetRedirectPath(const std::string redirectPath);
 	private:
 		std::string							_name;
 		// PAGE LOCATION
@@ -59,8 +59,8 @@ class Location
 		bool								_autoIndex;
 		
 		// RETURN LOCATION
-		size_t								_returnCode; // if -> returnCode == 0 -> n'est pas une location de redirection | else -> returnCode != 0 location de redirection
-		std::string							_returnPath;
+		size_t								_redirectCode; // if -> returnCode == 0 -> n'est pas une location de redirection | else -> returnCode != 0 location de redirection
+		std::string							_redirectPath;
 };
 
 #endif

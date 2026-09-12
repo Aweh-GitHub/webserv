@@ -17,6 +17,7 @@
 #include "LocationBuilder.hpp"
 #include <fstream>
 #include <iostream>
+#include <exception>
 
 Server	ServerBuilder::ParseServer(std::ifstream& file)
 {
@@ -27,19 +28,22 @@ Server	ServerBuilder::ParseServer(std::ifstream& file)
 
 	std::string line;
 	
-	while (std::getline(file, line) && !isLineEndBracket(line))
+	while (std::getline(file, line))
 	{
 		std::string	key, value;
 		std::map<std::string, void (*)(Server&, std::string, std::ifstream& file)>::iterator handlerIt;
 		void (*handler)(Server&, std::string, std::ifstream& file);
 
 		++ConfigBuilder::LineIndex;
-		if (isCommentLine(line))
+		line = lineTrimSpaces(line);
+		if (isLineEndBracket(line))
+			break;
+		if (isSkipLine(line))
 			continue;
 		lineParseKeyValue(line, key, value);
 		handlerIt = handlers.find(key);
 		if (handlerIt == handlers.end())
-			throw std::runtime_error("Error: PARSE_SERVER, at line (" + toString(ConfigBuilder::LineIndex) + ") unrecognized key \"" + key + "\".");
+			throwLineError("Error: PARSE_SERVER, at line (" + toString(ConfigBuilder::LineIndex) + ") unrecognized key \"" + key + "\".");
 		handler = handlerIt->second;
 		(*handler)(server, value, file);
 	}
@@ -61,19 +65,18 @@ std::map<std::string, void (*)(Server&, std::string, std::ifstream& file)>	Serve
 	return (handlers);
 }
 
-//
-// TODO: verif format 0.0.0.0
-//
 void	ServerBuilder::handleParse_HostIp(Server& server, std::string value, std::ifstream& file)
 {
 	(void)file;
-	server.SetHostIp(lineStripQuotes(value));
+	value = lineStripQuotes(value);
+	verifyIP(value);
+	server.SetHostIp(value);
 }
 
 void	ServerBuilder::handleParse_ListenPort(Server& server, std::string value, std::ifstream& file)
 {
 	(void)file;
-	server.SetListenPort(toSize(value));
+	server.SetListenPort(parseAndVerifyPort(value));
 }
 
 void	ServerBuilder::handleParse_ServerDomains(Server& server, std::string value, std::ifstream& file)
@@ -81,57 +84,70 @@ void	ServerBuilder::handleParse_ServerDomains(Server& server, std::string value,
 	std::vector<std::string> domains;
 	
 	(void)file;
-	domains = split(value, ',');
+	domains = splitValue(value, ',');
 	for (size_t i = 0; i < domains.size(); i++)
+	{
 		domains[i] = lineStripQuotes(domains[i]);
+		verifyDomain(domains[i]);
+	}
 	server.SetServerDomains(domains);
 }
 
 void	ServerBuilder::handleParse_PathRoot(Server& server, std::string value, std::ifstream& file)
 {
 	(void)file;
-	server.SetPathRoot(lineStripQuotes(value));
+	value = lineStripQuotes(value);
+	verifyDirPath(value);
+	server.SetPathRoot(value);
 }
 
-//
-// TODO: do i have to check '.htm' / '.html' ?
-//
 void	ServerBuilder::handleParse_IndexFiles(Server& server, std::string value, std::ifstream& file)
 {
+	std::vector<std::string> rawFiles;
 	std::vector<std::string> indexFiles;
 	
 	(void)file;
-	indexFiles = split(value, ',');
-	for (size_t i = 0; i < indexFiles.size(); i++)
-		indexFiles[i] = lineStripQuotes(indexFiles[i]);
+	rawFiles = splitValue(value, ',');
+	if (rawFiles.empty())
+        throwLineError("Invalid value, cannot be empty");
+	for (size_t i = 0; i < rawFiles.size(); i++)
+	{
+		std::string indexFile;
+
+		indexFile = lineStripQuotes(rawFiles[i]);
+		verifyIndexFileName(indexFile);
+		indexFiles.push_back(indexFile);
+	}
 	server.SetIndexFiles(indexFiles);
 }
 
 void	ServerBuilder::handleParse_ClientMaxBodySize(Server& server, std::string value, std::ifstream& file)
 {
 	(void)file;
-	server.SetClientMaxBodySize(toSize(value));
+	server.SetClientMaxBodySize(parseAndVerifyMaxBodySize(value));
 }
 
-//
-// TODO: verif: firsts args are only size_t verif: last arg is only string
-// TODO: verif: no duplicate
-//
 void	ServerBuilder::handleParse_ErrorPages(Server& server, std::string value, std::ifstream& file)
 {
-	std::vector<std::string> args;
+	std::string rawPath;
 	std::string errorPage;
+	std::vector<std::string> args;
 
-	(void)file;
-	args = split(value, ',');
-	errorPage = lineStripQuotes(*(--args.end()));
-	for (size_t i = 0; i < args.size() - 1; i++)
-	{
-		size_t errorCode;
-
-		errorCode = toSize(args[i]);
-		server.AddErrorPage(errorCode, errorPage);
-	}
+    (void)file;
+    args = splitValue(value, ',');
+    if (args.size() < 2)
+        throwLineError("Wrong value, must be:    errorPage:<code>,[code]...,<path>");
+    rawPath = args.back();
+    verifyQuotesSanity(rawPath);
+    errorPage = lineStripQuotes(rawPath);
+    verifyURL(errorPage);
+    for (size_t i = 0; i < args.size() - 1; ++i)
+    {
+        size_t errorCode;
+		
+		errorCode = parseAndVerifyErrorCode(args[i]);
+        server.AddErrorPage(errorCode, errorPage);
+    }
 }
 
 void	ServerBuilder::handleParse_Location(Server& server, std::string value, std::ifstream& file)
@@ -139,7 +155,7 @@ void	ServerBuilder::handleParse_Location(Server& server, std::string value, std:
 	Location location;
 
 	if (value != "{")
-		throw std::runtime_error("Error: after 'location' key expected to get '{'");
+		throwLineError("After 'location' key expected to get '{'");
 	location = LocationBuilder::ParseLocation(file);
 	server.AddLocation(location.GetName(), location);
 }

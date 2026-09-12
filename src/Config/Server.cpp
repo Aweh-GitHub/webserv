@@ -6,7 +6,7 @@
 /*   By: thantoni <thantoni@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 16:20:46 by thantoni          #+#    #+#             */
-/*   Updated: 2026/09/01 19:53:30 by thantoni         ###   ########.fr       */
+/*   Updated: 2026/09/12 16:03:06 by thantoni         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -83,18 +83,16 @@ void	Server::SetIndexFiles(std::vector<std::string> indexFiles) { this->_indexFi
 
 void	Server::SetClientMaxBodySize(size_t clientMaxBodySize) { this->_clientMaxBodySize = clientMaxBodySize; }
 
-//
-// TODO: handle dups and edge cases
-//
 void	Server::AddErrorPage(size_t errorCode, std::string pathErrorPage)
 {
+	if (this->_errorPages.find(errorCode) != this->_errorPages.end())
+		throwLineError("Duplicate errorPage: " + toString(errorCode));
 	this->_errorPages[errorCode] = pathErrorPage;
 }
 
-//
-// TODO: handle dups and edge cases
-//
 void	Server::AddLocation(std::string locationName, Location location)
 {
+	if (this->_locations.find(locationName) != this->_locations.end())
+		throwLineError("Duplicate location: " + locationName);
 	this->_locations[locationName] = location;
 }
