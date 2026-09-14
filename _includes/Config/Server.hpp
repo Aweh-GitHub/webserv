@@ -29,12 +29,12 @@ class Server
 
 		const std::string						GetHostIp() const;
 		size_t									GetListenPort() const;
-		const std::vector<std::string>			GetServerDomains() const;
+		const std::vector<std::string>&			GetServerDomains() const;
 		const std::string						GetPathRoot() const;
-		const std::vector<std::string>			GetIndexFiles() const;
+		const std::vector<std::string>&			GetIndexFiles() const;
 		size_t									GetClientMaxBodySize() const;
-		const std::map<size_t, std::string>		GetErrorPages() const;
-		const std::map<std::string, Location>	GetLocations() const;
+		const std::map<size_t, std::string>&	GetErrorPages() const;
+		const std::map<std::string, Location>&	GetLocations() const;
 
 		void	SetHostIp(const std::string hostIp);
 		void	SetListenPort(const size_t listenPort);
@@ -45,6 +45,7 @@ class Server
 		void	AddErrorPage(const size_t errorCode, const std::string pathErrorPage);
 		void	AddLocation(const std::string locationName, const Location location);
 
+		const Location*	TryFindLocation(const std::string &name) const;
 	private:
 		std::string								_hostIp;
 		size_t									_listenPort;

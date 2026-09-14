@@ -6,7 +6,7 @@
 /*   By: thantoni <thantoni@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 16:20:46 by thantoni          #+#    #+#             */
-/*   Updated: 2026/09/12 16:03:06 by thantoni         ###   ########.fr       */
+/*   Updated: 2026/09/14 20:59:18 by thantoni         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -59,14 +59,14 @@ void	Server::Print() const
 				<< "[>]   Error Pages\t\t: ";
 	for (std::map<size_t, std::string>::const_iterator errorPageIt = this->_errorPages.begin(); errorPageIt != this->_errorPages.end(); ++errorPageIt)
 	{
-        std::cout << "{ " << errorPageIt->first << " : \"" << errorPageIt->second << "\" }  ";
-    }
+		std::cout << "{ " << errorPageIt->first << " : \"" << errorPageIt->second << "\" }  ";
+	}
 	std::cout	<< "\n_________________________________\n"
 				<< "[v]   Locations\t\t\t:\n";
 	for (std::map<std::string, Location>::const_iterator locationIt = this->_locations.begin(); locationIt != this->_locations.end(); ++locationIt)
 	{
 		locationIt->second.Print();
-    }
+	}
 	std::cout		<< "\n_________________________________\n\n"
 					<< std::endl;
 }
@@ -95,4 +95,23 @@ void	Server::AddLocation(std::string locationName, Location location)
 	if (this->_locations.find(locationName) != this->_locations.end())
 		throwLineError("Duplicate location: " + locationName);
 	this->_locations[locationName] = location;
+}
+
+const std::string						Server::GetHostIp() const { return (this->_hostIp); }
+size_t									Server::GetListenPort() const { return (this->_listenPort); }
+const std::vector<std::string>&			Server::GetServerDomains() const { return (this->_serverDomains); }
+const std::string						Server::GetPathRoot() const { return (this->_pathRoot); }
+const std::vector<std::string>&			Server::GetIndexFiles() const { return (this->_indexFiles); }
+size_t									Server::GetClientMaxBodySize() const { return (this->_clientMaxBodySize); }
+const std::map<size_t, std::string>&	Server::GetErrorPages() const { return (this->_errorPages); }
+const std::map<std::string, Location>&	Server::GetLocations() const { return (this->_locations); }
+
+const Location*	Server::TryFindLocation(const std::string &name) const
+{
+	std::map<std::string, Location>::const_iterator	it;
+	
+	it = this->_locations.find(name);
+	if (it != this->_locations.end())
+		return &(it->second);
+	return (NULL);
 }

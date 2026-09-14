@@ -6,7 +6,7 @@
 /*   By: thantoni <thantoni@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/01 19:07:42 by thantoni          #+#    #+#             */
-/*   Updated: 2026/09/10 14:54:27 by thantoni         ###   ########.fr       */
+/*   Updated: 2026/09/14 20:40:43 by thantoni         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,6 +30,7 @@ class Config
 		bool						GetIsInitialized();
 
 		void	Print() const;
+		const Server* TryFindServer(const std::string& hostIp, const size_t listenPort, const std::string& serverDomain) const;
 	private:
 		std::vector<Server> _allServers;
 		bool				_isInitialized;
