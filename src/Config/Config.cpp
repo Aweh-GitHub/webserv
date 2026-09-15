@@ -6,12 +6,13 @@
 /*   By: thantoni <thantoni@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/01 19:18:33 by thantoni          #+#    #+#             */
-/*   Updated: 2026/09/14 20:52:35 by thantoni         ###   ########.fr       */
+/*   Updated: 2026/09/15 17:08:42 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Config.hpp"
 #include <iostream>
+#include <algorithm>
 
 Config::Config() : _allServers(), _isInitialized(false) { }
 
