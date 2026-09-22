@@ -1,30 +1,15 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   Socket.hpp                                         :+:      :+:    :+:   */
+/*   Post.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/08/27 00:51:43 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/20 02:00:59 by lupayet          ###   ########.fr       */
+/*   Created: 2026/09/22 14:57:48 by lupayet           #+#    #+#             */
+/*   Updated: 2026/09/22 14:58:59 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "core_webserv.hpp"
-#include "AAction.hpp"
+#include "Client.hpp"
 
-class	Socket : public AAction
-{
-	public:
-		Socket(int fd, size_t port, const std::string &ip);
-		Socket(const Socket &cpy);
-		Socket	&operator=(const Socket &other);
-		~Socket();
-		void	action();
-		size_t	getPort();
-		std::string	&getIp();
-	private:
-		size_t		_port;
-		std::string	_ip;
-		Socket();
-};
+void	Client::handlePost(const std::string &endPath)

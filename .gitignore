@@ -6,3 +6,7 @@
 !com.txt
 !*/
 !*.config
+!/www/
+!/www/**
+!/template/
+!/template/**

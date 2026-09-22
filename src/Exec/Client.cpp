@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 01:52:12 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/05 14:15:15 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/09/22 12:50:20 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,13 +16,21 @@
 
 const std::map<int, std::string> Client::_redirCode = Client::createRedirCode();
 
-Client::Client(int fd, int port) : _port(port), _status(READING)
+Client::Client(int fd, int port, std::string &ip) : 
+	_port(port),
+	_ip(ip),
+	_serverOrigin(NULL),
+	_location(NULL),
+	_status(READING)
 {
 	_fd = fd;
 	_sBytes = 0;
+	_endRequestHeader = 0;
 	_bodyReceived = 0;
 	_bodyLength = 0;
+	_startBodyHeader = 0;
 	_status = READING;
+	_cgiRunning = false;
 	#if DEBUG
 	std::cout << "Client constructor called " << _fd << std::endl;
 	#endif
@@ -66,46 +74,122 @@ static void	updatePoll(int fd)
 	}
 }
 
+bool	Client::setServerLocation()
+{
+	const std::string	requestDomain = removePort(getValue("Host", _headers));
+	_serverOrigin = WebServ::_config.TryFindServer(_ip, _port, requestDomain);
+	if (_serverOrigin == NULL)
+		return (badRequestRes(), false);
+	splitUrl(getValue("Location", _headers), _requestLocation, _requestUrlQuery);
+	std::cout << "RequestLocation: " << _requestLocation << std::endl;
+	
+	_location = _serverOrigin->TryFindLocation(_requestLocation);
+	_location->Print();
+	if (_location == NULL)
+		return (badRequestRes(), false);
+	return (true);
+}
+
+ssize_t	Client::maxBodyLength()
+{
+	std::string	contentLengthStr;
+	char		*end;
+	long		contentLength;
+	ssize_t		maxBodySize;
+
+	// Location overrides server configuration
+	if (_location && _location->GetClientMaxBodySize() != 0)
+		maxBodySize = _location->GetClientMaxBodySize();
+	else
+		maxBodySize = _serverOrigin->GetClientMaxBodySize();
+
+	contentLengthStr = getValue("Content-Length", _headers);
+
+	// No Content-Length -> no declared body size
+	if (contentLengthStr.empty())
+		return (maxBodySize);
+
+	// Parse Content-Length
+	end = NULL;
+	contentLength = std::strtol(contentLengthStr.c_str(), &end, 10);
+
+	// Invalid number
+	if (end == contentLengthStr.c_str() || *end != '\0')
+	{
+		badRequestRes();
+		return (-1);
+	}
+
+	// Negative Content-Length
+	if (contentLength < 0)
+	{
+		badRequestRes();
+		return (-1);
+	}
+	_bodyLength = contentLength;
+	// Declared body is larger than configuration
+	if (static_cast<size_t>(contentLength) > static_cast<size_t>(maxBodySize))
+	{
+		// 413 Payload Too Large, preferably
+		badRequestRes();
+		return (-1);
+	}
+
+	return (maxBodySize);
+}
+
 void	Client::getRequest()
 {
-	char	buffer[4096];
-	ssize_t n = recv(_fd, buffer, sizeof(buffer), 0);
-	if (n > 0)
-	{
-		_request.append(buffer, n);
-		ssize_t	headerEnd = _request.find("\r\n\r\n");
-		if (static_cast<std::string::size_type>(headerEnd) == std::string::npos)
+	char buffer[4096];
+
+    ssize_t n = recv(_fd, buffer, sizeof(buffer), 0);
+	
+    if (n > 0)
+    {
+        _request.append(buffer, n);
+
+        // Header not complete yet
+        _endRequestHeader = _request.find("\r\n\r\n");
+        if (_endRequestHeader == std::string::npos)
+            return;
+		if (_headers.empty())
+			if (!parseHeader())
+				return (badRequestRes());
+		if (!_serverOrigin && !_location)
+			if (!setServerLocation())
+				return;
+        _startBodyHeader = _endRequestHeader + 4;
+
+		_maxBodyLength = maxBodyLength();
+
+		if (_maxBodyLength < 0)
 		{
-			_status = WRITING;
-			return ;
-		}
-		size_t bodyStart = headerEnd + 4;
-		size_t cPos = _request.find("Content-Length: ");
-		if (cPos != std::string::npos)
+            _status = WRITING;
+            return;
+        }
+
+		_bodyReceived = _request.size() - _startBodyHeader;
+
+		if (_bodyReceived > _bodyLength)
 		{
-			std::cout << "in if cPos" << std::endl;
-			size_t cEnd = _request.find_first_of("\r\n", cPos);
-			std::string contentLength = _request.substr(cPos + 16, cEnd - (cPos + 16));
-			_bodyLength = std::atol(contentLength.c_str());
-			_bodyReceived = _request.size() - bodyStart;
+			badRequestRes();
+			return;
 		}
-		if (_bodyReceived >= _bodyLength)
-		{
-			_status = WRITING;
-			return ;
-		}
-	}
-	else if (n == 0)
-	{
-		close(_fd);
-		WebServ::closeConnection() = _fd;
-	}
-	/*
-	else
-	{
-	//max try before closing the connnection
-	}
-	*/
+        // Complete request
+        if (_bodyReceived == _bodyLength)
+        {
+            _status = WRITING;
+            return;
+        }
+
+        // Header complete, body still arriving
+        _status = READING;
+    }
+    else if (n == 0)
+    {
+        close(_fd);
+        WebServ::closeConnection() = _fd;
+    }
 }
 
 void	Client::handleRequest()
