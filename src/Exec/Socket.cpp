@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 01:12:14 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/05 14:15:37 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/09/20 02:01:10 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
 #include "WebServ.hpp"
 #include "Client.hpp"
 
-Socket::Socket(int fd, int port) : _port(port)
+Socket::Socket(int fd, size_t port, const std::string &ip) : _port(port), _ip(ip)
 {
 	_fd = fd;
 	#if DEBUG
@@ -59,12 +59,17 @@ void	Socket::action()
 		return ;
 	}
 	fcntl(cfd, F_SETFL, O_NONBLOCK);
-	r = new Client(cfd, _port);
+	r = new Client(cfd, _port, _ip);
 	WebServ::addToPoll(cfd);
 	WebServ::addToAction(r);
 }
 
-int Socket::getPort()
+size_t Socket::getPort()
 {
 	return (_port);
+}
+
+std::string &Socket::getIp()
+{
+	return (_ip);
 }

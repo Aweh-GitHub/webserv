@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: thantoni <thantoni@student.42.fr>          +#+  +:+       +#+        */
+/*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 16:20:46 by thantoni          #+#    #+#             */
-/*   Updated: 2026/09/14 20:59:18 by thantoni         ###   ########.fr       */
+/*   Updated: 2026/09/18 01:17:42 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -106,12 +106,41 @@ size_t									Server::GetClientMaxBodySize() const { return (this->_clientMaxBo
 const std::map<size_t, std::string>&	Server::GetErrorPages() const { return (this->_errorPages); }
 const std::map<std::string, Location>&	Server::GetLocations() const { return (this->_locations); }
 
-const Location*	Server::TryFindLocation(const std::string &name) const
-{
-	std::map<std::string, Location>::const_iterator	it;
+// const Location*	Server::TryFindLocation(const std::string &name) const
+// {
+// 	std::map<std::string, Location>::const_iterator	it;
 	
-	it = this->_locations.find(name);
-	if (it != this->_locations.end())
-		return &(it->second);
-	return (NULL);
+// 	it = this->_locations.find(name);
+// 	if (it != this->_locations.end())
+// 		return &(it->second);
+// 	return (NULL);
+// }
+
+const Location* Server::TryFindLocation(const std::string &name) const
+{
+	std::map<std::string, Location>::const_iterator it;
+	const Location *best = NULL;
+	size_t bestLength = 0;
+
+	for (it = this->_locations.begin(); it != this->_locations.end(); ++it)
+	{
+		const std::string &location = it->first;
+
+		if (name.compare(0, location.length(), location) != 0)
+			continue;
+
+		// Make sure /foo does not match /foobar
+		if (location != "/" &&
+			name.length() > location.length() &&
+			name[location.length()] != '/')
+			continue;
+
+		if (location.length() > bestLength)
+		{
+			best = &it->second;
+			bestLength = location.length();
+		}
+	}
+
+	return (best);
 }

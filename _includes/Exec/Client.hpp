@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: thantoni <thantoni@student.42.fr>          +#+  +:+       +#+        */
+/*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 01:05:24 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/09 12:45:58 by thantoni         ###   ########.fr       */
+/*   Updated: 2026/09/22 14:59:54 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 
 #include "core_webserv.hpp"
 #include "AAction.hpp"
+#include "Server.hpp"
 #include <map>
 
 enum rStatus
@@ -27,36 +28,49 @@ enum rStatus
 class Client : public AAction
 {
 	public:
-		Client(int fd, int port);
+		Client(int fd, int port, std::string &ip);
 		Client(const Client &cpy);
 		Client	&operator=(const Client &other);
 		~Client();
 		void	action();
-		int		build();
+		void	build();
 		int		getPort();
 	private:
 		void	getRequest();
 		void	handleRequest();
 		void	sendResponce();
 		int			_port;
+		std::string	_ip;
 		bool	parseRequestLine(const std::string &line);
 		bool	parseHeaderLine(const std::string &line);
 		bool	parseHeader();
 		void	badRequestRes();
+		void	notFoundRes(int errCode, std::map<size_t, std::string> errorPages);
 		std::string	getHeader(int code, std::string type, size_t length);
 		bool	handleGet(std::string &path);
+		void	handlePost(const std::string &endPath);
 		bool	handleIndex(std::string &path);
+		bool	setServerLocation();
+		ssize_t	maxBodyLength();
 		std::map<std::string, std::string> _headers;
-		rStatus		_status;
-		std::string _request;
-		std::string	_res;
-		ssize_t		_sBytes;
-		ssize_t		_bodyReceived;
-		ssize_t		_bodyLength;
+		const Server	*_serverOrigin;
+		const Location	*_location;
+		std::string		_requestLocation;
+		std::string		_requestUrlQuery;
+		rStatus			_status;
+		std::string 	_request;
+		std::string		_res;
+		ssize_t			_sBytes;
+		size_t			_endRequestHeader;
+		ssize_t			_startBodyHeader;
+		ssize_t			_bodyReceived;
+		ssize_t			_bodyLength;
+		ssize_t			_maxBodyLength;
+		bool			_cgiRunning;
 		static std::map<int, std::string> createRedirCode();
 		static const std::map<int, std::string> _redirCode;
 		std::string	redirMap(int code);
-		std::string	redirect(int code);
+		std::string	redirect(int code, std::string path);
 		std::string	indexDir(std::string &path);
 		Client();
 };

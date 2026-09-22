@@ -6,15 +6,16 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/04 08:02:25 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/04 10:11:42 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/09/18 00:09:24 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Client.hpp"
 
+
 bool Client::handleGet(std::string &path)
 {
-	std::string	err("./template/404.htlm");
+	std::string	err("./template/404.html");
 	std::string	body;
 	if (!getFileContent(path, body))
 	{

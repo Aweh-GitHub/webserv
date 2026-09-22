@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/04 07:49:25 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/04 09:50:56 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/09/21 18:46:50 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,7 +42,6 @@ std::string	ft_itoa(int n)
 std::string getValue(const std::string& key, const std::map<std::string, std::string>& map)
 {
     std::map<std::string, std::string>::const_iterator it = map.find(key);
-
     if (it != map.end())
         return it->second;
 
@@ -107,4 +106,40 @@ std::string getMimeType(const std::string& path)
         return "application/wasm";
 
     return "application/octet-stream";
+}
+
+void splitUrl(const std::string &url, std::string &urlPath, std::string &urlQuery)
+{
+	std::string::size_type pos = url.find('?');
+
+	if (pos == std::string::npos)
+	{
+		urlPath = url;
+		urlQuery.clear();
+		return;
+	}
+
+	urlPath = url.substr(0, pos);
+	urlQuery = url.substr(pos + 1);
+}
+
+std::string removePort(const std::string& host)
+{
+    if (host.empty())
+        return host;
+
+    // IPv6: [::1]:8080
+    if (host[0] == '[')
+    {
+        std::string::size_type end = host.find(']');
+        if (end != std::string::npos)
+            return host.substr(0, end + 1);
+    }
+
+    // IPv4 / hostname: example.com:8080
+    std::string::size_type pos = host.find(':');
+    if (pos != std::string::npos)
+        return host.substr(0, pos);
+
+    return host;
 }

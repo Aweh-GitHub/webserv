@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   webserv.hpp                                        :+:      :+:    :+:   */
+/*   core_webserv.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: thantoni <thantoni@student.42.fr>          +#+  +:+       +#+        */
+/*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/26 00:39:55 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/09 12:39:41 by thantoni         ###   ########.fr       */
+/*   Updated: 2026/09/21 18:47:07 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,3 +42,5 @@ std::string	ft_itoa(int n);
 int			getFileContent(std::string &filename, std::string &out);
 std::string getValue(const std::string& key, const std::map<std::string, std::string>& map);
 std::string getMimeType(const std::string& path);
+void		splitUrl(const std::string &url, std::string &urlPath, std::string &urlQuery);
+std::string removePort(const std::string& host);
