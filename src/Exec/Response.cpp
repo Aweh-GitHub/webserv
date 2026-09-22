@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/31 19:52:27 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/22 15:32:20 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/09/22 15:46:51 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -158,7 +158,7 @@ bool	resolvePath(const Location *location,
 
 void Client::build()
 {
-	std::cout << _request << std::endl << "boundary :" << getValue("Content-Type", _headers) << std::endl;
+	//std::cout << _request << std::endl << "boundary :" << getValue("Content-Type", _headers) << std::endl;
 	if (_location->IsRedirection())
 	{
 		_res = redirect(_location->GetReturnCode(), _location->GetReturnPath());

@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 01:52:12 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/22 12:50:20 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/09/22 15:49:25 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -84,7 +84,7 @@ bool	Client::setServerLocation()
 	std::cout << "RequestLocation: " << _requestLocation << std::endl;
 	
 	_location = _serverOrigin->TryFindLocation(_requestLocation);
-	_location->Print();
+	//_location->Print();
 	if (_location == NULL)
 		return (badRequestRes(), false);
 	return (true);
