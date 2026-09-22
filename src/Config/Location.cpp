@@ -6,7 +6,7 @@
 /*   By: thantoni <thantoni@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/29 12:10:26 by thantoni          #+#    #+#             */
-/*   Updated: 2026/09/14 20:59:43 by thantoni         ###   ########.fr       */
+/*   Updated: 2026/09/22 16:13:40 by thantoni         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,6 +55,7 @@ void	Location::Print() const
 const std::string							Location::GetName() const { return (this->_name); }
 const std::string							Location::GetPathRoot() const { return (this->_pathRoot); }
 const std::vector<std::string>&				Location::GetIndexFiles() const { return (this->_indexFiles); }
+const std::string							Location::GetPathUploadStore() const { return (this->_pathUploadStore); }
 const std::set<std::string>&				Location::GetAllowedMethods() const { return (this->_allowedMethods); }
 const std::map<std::string, std::string>&	Location::GetCGIExtensions() const { return (this->_cgiExtensions); }
 size_t										Location::GetClientMaxBodySize() const { return (this->_clientMaxBodySize); }

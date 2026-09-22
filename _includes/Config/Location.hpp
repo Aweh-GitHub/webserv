@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Location.hpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
+/*   By: thantoni <thantoni@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/29 12:08:54 by thantoni          #+#    #+#             */
-/*   Updated: 2026/09/18 01:24:31 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/09/22 16:13:35 by thantoni         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,6 +30,7 @@ class Location
 		const std::string							GetName() const;
 		const std::string							GetPathRoot() const;
 		const std::vector<std::string>&				GetIndexFiles() const;
+		const std::string							GetPathUploadStore() const;
 		const std::set<std::string>&				GetAllowedMethods() const;
 		const std::map<std::string, std::string>&	GetCGIExtensions() const;
 		size_t										GetClientMaxBodySize() const;
