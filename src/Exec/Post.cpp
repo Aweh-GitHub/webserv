@@ -6,10 +6,13 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/22 14:57:48 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/22 14:58:59 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/09/28 05:45:33 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Client.hpp"
 
 void	Client::handlePost(const std::string &endPath)
+{
+	
+}

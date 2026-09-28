@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 01:05:24 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/22 14:59:54 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/09/25 01:35:07 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,6 +23,13 @@ enum rStatus
 	WRITING,
 	SENDING,
 	TERMINATED
+};
+
+enum PathType
+{
+	PATH_NOT_FOUND,
+	PATH_FILE,
+	PATH_DIRECTORY
 };
 
 class Client : public AAction
@@ -50,6 +57,20 @@ class Client : public AAction
 		bool	handleGet(std::string &path);
 		void	handlePost(const std::string &endPath);
 		bool	handleIndex(std::string &path);
+		//
+		bool	isCGI(const std::string &path) const;
+		PathType	resolvePath(const Location *location, 
+			const std::string &requestLocation,
+			const Server *server,
+			std::string &path);
+		bool	resolveIndex(std::string &path);
+		bool	resolveCGIIndex(const std::string &requestLocation,
+							 std::string &scriptPath,
+							 std::string &pathInfo);
+		void	executeCGI(const std::string &scriptPath,
+						const std::string &scriptName,
+						const std::string &pathInfo);
+		//
 		bool	setServerLocation();
 		ssize_t	maxBodyLength();
 		std::map<std::string, std::string> _headers;

@@ -6,7 +6,7 @@
 #    By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/09/09 12:18:45 by thantoni          #+#    #+#              #
-#    Updated: 2026/09/20 03:10:14 by lupayet          ###   ########.fr        #
+#    Updated: 2026/09/25 02:18:57 by lupayet          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -19,7 +19,8 @@ DEBUG ?= 1
 NAME					=	webserv
 
 COMPILE					=	c++
-FLAGS					=	-Wall -Wextra -Werror -std=c++98 -DDEBUG=$(DEBUG) -g -fsanitize=address -fno-omit-frame-pointer
+FLAGS					=	-Wall -Wextra -Werror -std=c++98 -DDEBUG=$(DEBUG) -g 
+#-fsanitize=address -fno-omit-frame-pointer
 
 INCLUDE_PATH__ROOT		=	_includes
 INCLUDE_PATH__CONFIG	=	_includes/Config

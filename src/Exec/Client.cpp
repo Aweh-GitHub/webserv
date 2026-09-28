@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 01:52:12 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/22 15:49:25 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/09/25 02:53:51 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -202,7 +202,7 @@ void	Client::handleRequest()
 
 void	Client::sendResponce()
 {
-	//std::cout << _res << std::endl;
+	std::cout << _res << std::endl;
 	ssize_t n = send(_fd, _res.c_str() + _sBytes, _res.size() - _sBytes, 0);
 	if (n > 0)
 	{
