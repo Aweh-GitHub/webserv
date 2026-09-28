@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 00:51:43 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/20 02:00:59 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/09/28 23:19:37 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,8 +17,6 @@ class	Socket : public AAction
 {
 	public:
 		Socket(int fd, size_t port, const std::string &ip);
-		Socket(const Socket &cpy);
-		Socket	&operator=(const Socket &other);
 		~Socket();
 		void	action();
 		size_t	getPort();
@@ -27,4 +25,6 @@ class	Socket : public AAction
 		size_t		_port;
 		std::string	_ip;
 		Socket();
+		Socket(const Socket &cpy);
+		Socket	&operator=(const Socket &other);
 };

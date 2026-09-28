@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/25 01:04:09 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/28 18:44:54 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/09/28 23:55:17 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,15 +45,9 @@ bool Client::parseCGIResponse(const std::string &cgiOutput)
 		body = cgiOutput.substr(headerEnd + 2);
 	}
 
-	/*
-	 * Default status.
-	 */
 	int statusCode = 200;
 	std::string statusText = "OK";
 
-	/*
-	 * Parse CGI headers.
-	 */
 	std::istringstream stream(headers);
 	std::string line;
 
@@ -90,9 +84,6 @@ bool Client::parseCGIResponse(const std::string &cgiOutput)
 		}
 	}
 
-	/*
-	 * Build actual HTTP response.
-	 */
 	std::ostringstream response;
 
 	response << "HTTP/1.1 "
@@ -101,14 +92,8 @@ bool Client::parseCGIResponse(const std::string &cgiOutput)
 			 << statusText
 			 << "\r\n";
 
-	/*
-	 * CGI headers collected above.
-	 */
 	response << _res;
 
-	/*
-	 * CGI body length.
-	 */
 	response << "Content-Length: "
 			 << body.length()
 			 << "\r\n";
@@ -134,11 +119,6 @@ void Client::executeCGI(const std::string &scriptPath,
 	std::string				extension;
 	std::string				executable;
 
-	/*
-	 * --------------------------------------------------
-	 * Find CGI executable
-	 * --------------------------------------------------
-	 */
 	dot = scriptPath.rfind('.');
 
 	if (dot == std::string::npos)
@@ -163,19 +143,6 @@ void Client::executeCGI(const std::string &scriptPath,
 
 	executable = it->second;
 
-	/*
-	 * --------------------------------------------------
-	 * Create pipes
-	 * --------------------------------------------------
-	 *
-	 * inPipe:
-	 *
-	 * parent -> child stdin
-	 *
-	 * outPipe:
-	 *
-	 * child stdout -> parent
-	 */
 	if (pipe(inPipe) == -1)
 	{
 		badRequestRes();
@@ -190,13 +157,7 @@ void Client::executeCGI(const std::string &scriptPath,
 		return ;
 	}
 
-	/*
-	 * --------------------------------------------------
-	 * Fork
-	 * --------------------------------------------------
-	 */
 	pid = fork();
-	std::cout << _ip << std::endl;
 	if (pid == -1)
 	{
 		close(inPipe[0]);
@@ -208,34 +169,15 @@ void Client::executeCGI(const std::string &scriptPath,
 		return ;
 	}
 
-	/*
-	 * --------------------------------------------------
-	 * CHILD
-	 * --------------------------------------------------
-	 */
 	if (pid == 0)
 	{
-		/*
-		 * stdin <- parent
-		 */
 		dup2(inPipe[0], STDIN_FILENO);
-
-		/*
-		 * stdout -> parent
-		 */
 		dup2(outPipe[1], STDOUT_FILENO);
 
-		/*
-		 * Close duplicated descriptors.
-		 */
 		close(inPipe[0]);
 		close(inPipe[1]);
 		close(outPipe[0]);
 		close(outPipe[1]);
-
-		/*
-		 * CGI environment
-		 */
 
 		setenv("GATEWAY_INTERFACE",
 			   "CGI/1.1",
@@ -261,16 +203,10 @@ void Client::executeCGI(const std::string &scriptPath,
 			   _requestLocation.c_str(),
 			   1);
 
-		/*
-		 * Query string
-		 */
 		setenv("QUERY_STRING",
 			   _requestUrlQuery.c_str(),
 			   1);
 
-		/*
-		 * Content information.
-		 */
 		if (_headers.find("Content-Type") != _headers.end())
 		{
 			setenv("CONTENT_TYPE",
@@ -285,9 +221,6 @@ void Client::executeCGI(const std::string &scriptPath,
 				   1);
 		}
 
-		/*
-		 * Server information.
-		 */
 		setenv("SERVER_PROTOCOL",
 			   "HTTP/1.1",
 			   1);
@@ -306,9 +239,6 @@ void Client::executeCGI(const std::string &scriptPath,
 
 		setenv("REDIRECT_STATUS", "1", 1);
 
-		/*
-		 * Host.
-		 */
 		if (_headers.find("Host") != _headers.end())
 		{
 			setenv("HTTP_HOST",
@@ -317,47 +247,21 @@ void Client::executeCGI(const std::string &scriptPath,
 		}
 		
 		setenv("HTTP_COOKIE", _headers["Cookie"].c_str(), 1);
-		/*
-		 * Build argv.
-		 *
-		 * PHP:
-		 *
-		 * argv[0] = /usr/bin/php-cgi
-		 * argv[1] = ./www/wordpress/index.php
-		 */
+
 		char *argv[3];
 
 		argv[0] = const_cast<char *>(executable.c_str());
 		argv[1] = const_cast<char *>(scriptPath.c_str());
 		argv[2] = NULL;
 
-		execve(executable.c_str(),
-			   argv,
-			   environ);
+		execve(executable.c_str(), argv, environ);
 
-		/*
-		 * execve failed.
-		 */
 		exit(1);
 	}
-
-	/*
-	 * --------------------------------------------------
-	 * PARENT
-	 * --------------------------------------------------
-	 */
 
 	close(inPipe[0]);
 	close(outPipe[1]);
 
-	/*
-	 * POST/PUT body -> CGI stdin.
-	 *
-	 * _request should contain the complete HTTP request
-	 * according to your current parser.
-	 *
-	 * Ideally you should have a separate _body string.
-	 */
 	if (_headers["Method"] == "POST" ||
 		_headers["Method"] == "PUT")
 	{
@@ -380,15 +284,8 @@ void Client::executeCGI(const std::string &scriptPath,
 		}
 	}
 
-	/*
-	 * No more CGI input.
-	 */
 	close(inPipe[1]);
 
-	/*
-	 * Keep CGI output nonblocking. The response is drained by
-	 * readCGIOutput() while the client remains in WRITING.
-	 */
 	if (fcntl(outPipe[0], F_SETFL, O_NONBLOCK) == -1)
 	{
 		close(outPipe[0]);

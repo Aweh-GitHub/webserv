@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 01:05:24 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/28 06:38:59 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/09/28 23:16:59 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,8 +36,6 @@ class Client : public AAction
 {
 	public:
 		Client(int fd, int port, std::string &ip);
-		Client(const Client &cpy);
-		Client	&operator=(const Client &other);
 		~Client();
 		void	action();
 		void	build();
@@ -51,6 +49,7 @@ class Client : public AAction
 		bool	parseRequestLine(const std::string &line);
 		bool	parseHeaderLine(const std::string &line);
 		bool	parseHeader();
+		void	ErrorResponce(int error);
 		void	badRequestRes();
 		void	notFoundRes(int errCode, std::map<size_t, std::string> errorPages);
 		std::string	getHeader(int code, std::string type, size_t length);
@@ -100,4 +99,6 @@ class Client : public AAction
 		std::string	redirect(int code, std::string path);
 		std::string	indexDir(std::string &path);
 		Client();
+		Client(const Client &cpy);
+		Client	&operator=(const Client &other);
 };

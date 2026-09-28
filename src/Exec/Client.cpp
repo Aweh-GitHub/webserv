@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 01:52:12 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/28 08:32:48 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/09/29 00:57:05 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,39 +33,9 @@ Client::Client(int fd, int port, std::string &ip) :
 	_cgiRunning = false;
 	_cgiFd = -1;
 	_cgiPid = -1;
-	#if DEBUG
-	std::cout << "Client constructor called " << _fd << std::endl;
-	#endif
 }
 
-Client::Client(const Client &cpy) : _status(cpy._status), _res(cpy._res) 
-{
-	_fd = cpy._fd;
-	#if DEBUG
-	std::cout << "Client copy constructor called" << std::endl;
-	#endif
-}
-
-Client	&Client::operator=(const Client &other)
-{
-	if (this != &other)
-	{
-		_fd = other._fd;
-		_res = other._res;
-		_status = other._status;
-	}
-	#if DEBUG
-	std::cout << "Client copy assignement operator called" << std::endl;
-	#endif
-	return (*this);
-}
-
-Client::~Client()
-{
-	#if DEBUG
-	std::cout << "Client destructor called" << std::endl;
-	#endif
-}
+Client::~Client() {}
 
 static void	updatePoll(int fd)
 {
@@ -83,8 +53,11 @@ bool	Client::setServerLocation()
 	if (_serverOrigin == NULL)
 		return (badRequestRes(), false);
 	splitUrl(getValue("Location", _headers), _requestLocation, _requestUrlQuery);
-	std::cout << "RequestLocation: " << _requestLocation << std::endl;
-	
+	if (!isSafeRequestPath(_requestLocation))
+	{
+    	ErrorResponce(400);
+    	return (false);
+	}
 	_location = _serverOrigin->TryFindLocation(_requestLocation);
 	//_location->Print();
 	if (_location == NULL)

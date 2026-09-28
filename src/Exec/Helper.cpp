@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/04 07:49:25 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/21 18:46:50 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/09/29 00:56:32 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -142,4 +142,27 @@ std::string removePort(const std::string& host)
         return host.substr(0, pos);
 
     return host;
+}
+
+bool isSafeRequestPath(const std::string &path)
+{
+    std::string::size_type start = 0;
+    std::string::size_type end;
+    std::string segment;
+
+    while (start <= path.length())
+    {
+        end = path.find('/', start);
+        if (end == std::string::npos)
+            end = path.length();
+
+        segment = path.substr(start, end - start);
+        if (segment == ".." || segment == ".")
+            return (false);
+
+        start = end + 1;
+        if (end == path.length())
+            break;
+    }
+    return (true);
 }

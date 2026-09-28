@@ -6,13 +6,45 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/18 02:20:46 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/18 22:47:13 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/09/29 01:07:39 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Client.hpp"
 #include "core_webserv.hpp"
 #include <sstream>
+
+void	Client::ErrorResponce(int error)
+{
+	std::string	path;
+	std::string	body;
+	std::map<size_t, std::string>::const_iterator it;
+
+	it = std::map<size_t, std::string>::const_iterator();
+	if (_serverOrigin != NULL)
+		it = _serverOrigin->GetErrorPages().find(static_cast<size_t>(error));
+	if (_serverOrigin != NULL &&
+		it != _serverOrigin->GetErrorPages().end())
+		path = it->second;
+	else
+	{
+		std::ostringstream defaultPage;
+
+		defaultPage << "./template/" << error << ".html";
+		path = defaultPage.str();
+	}
+
+	if (!getFileContent(path, body))
+	{
+		body = "<html><body><h1><center>";
+		body += ft_itoa(error);
+		body += "</center></h1></body></html>";
+	}
+
+	_res = getHeader(error, "text/html", body.length());
+	_res += body;
+	_status = SENDING;
+}
 
 void	Client::notFoundRes(int errCode, std::map<size_t, std::string> errorPages)
 {

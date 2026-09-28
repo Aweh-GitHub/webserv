@@ -18,6 +18,9 @@
  * @package WordPress
  */
 
+define('WP_HOME', 'http://bob:8080/wordpress');
+define('WP_SITEURL', 'http://bob:8080/wordpress');
+
 // ** Database settings - You can get this info from your web host ** //
 /** The name of the database for WordPress */
 define( 'DB_NAME', 'wordpress' );
