@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 01:52:12 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/25 02:53:51 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/09/28 08:32:48 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,6 +31,8 @@ Client::Client(int fd, int port, std::string &ip) :
 	_startBodyHeader = 0;
 	_status = READING;
 	_cgiRunning = false;
+	_cgiFd = -1;
+	_cgiPid = -1;
 	#if DEBUG
 	std::cout << "Client constructor called " << _fd << std::endl;
 	#endif
@@ -202,7 +204,7 @@ void	Client::handleRequest()
 
 void	Client::sendResponce()
 {
-	std::cout << _res << std::endl;
+	//std::cout << _res << std::endl;
 	ssize_t n = send(_fd, _res.c_str() + _sBytes, _res.size() - _sBytes, 0);
 	if (n > 0)
 	{

@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 01:05:24 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/25 01:35:07 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/09/28 06:38:59 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -56,6 +56,7 @@ class Client : public AAction
 		std::string	getHeader(int code, std::string type, size_t length);
 		bool	handleGet(std::string &path);
 		void	handlePost(const std::string &endPath);
+		void	handleDelete(const std::string &endPath);
 		bool	handleIndex(std::string &path);
 		//
 		bool	isCGI(const std::string &path) const;
@@ -70,6 +71,8 @@ class Client : public AAction
 		void	executeCGI(const std::string &scriptPath,
 						const std::string &scriptName,
 						const std::string &pathInfo);
+		void	readCGIOutput();
+		bool	parseCGIResponse(const std::string &cgiOutput);
 		//
 		bool	setServerLocation();
 		ssize_t	maxBodyLength();
@@ -88,6 +91,9 @@ class Client : public AAction
 		ssize_t			_bodyLength;
 		ssize_t			_maxBodyLength;
 		bool			_cgiRunning;
+		int			_cgiFd;
+		pid_t		_cgiPid;
+		std::string	_cgiOutput;
 		static std::map<int, std::string> createRedirCode();
 		static const std::map<int, std::string> _redirCode;
 		std::string	redirMap(int code);

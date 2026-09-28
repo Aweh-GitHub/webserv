@@ -157,3 +157,6 @@ if ( ! function_exists( 'twentytwentyfive_format_binding' ) ) :
 		}
 	}
 endif;
+// if ( SITECOOKIEPATH != COOKIEPATH ) {
+//     setcookie(TEST_COOKIE, 'WP Cookie check', 0, SITECOOKIEPATH, COOKIE_DOMAIN);
+// }

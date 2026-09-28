@@ -6,7 +6,7 @@
 #    By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/09/09 12:18:45 by thantoni          #+#    #+#              #
-#    Updated: 2026/09/25 02:18:57 by lupayet          ###   ########.fr        #
+#    Updated: 2026/09/28 19:39:54 by lupayet          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -51,7 +51,8 @@ SRCS__EXEC				=														\
 							src/Exec/Socket.cpp									\
 							src/Exec/WebPage.cpp								\
 							src/Exec/WebServ.cpp								\
-							src/Exec/404.cpp
+							src/Exec/404.cpp									\
+							src/Exec/Post.cpp									\
 
 SRCS			=																\
 							src/main.cpp										\

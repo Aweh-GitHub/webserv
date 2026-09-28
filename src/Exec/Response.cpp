@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/31 19:52:27 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/25 01:34:20 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/09/28 19:37:44 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -223,6 +223,7 @@ PathType Client::resolvePath(const Location *location,
 							 std::string &path)
 {
 	std::string	root;
+	std::string	relativeLocation;
 	struct stat	st;
 
 	/*
@@ -232,6 +233,16 @@ PathType Client::resolvePath(const Location *location,
 
 	if (root.empty())
 		root = server->GetPathRoot();
+
+	relativeLocation = requestLocation;
+	if (location->GetName() != "/" &&
+		requestLocation.compare(0, location->GetName().length(),
+			location->GetName()) == 0)
+	{
+		relativeLocation = requestLocation.substr(location->GetName().length());
+		if (relativeLocation.empty())
+			relativeLocation = "/";
+	}
 
 	/*
 	 * Build filesystem path.
@@ -245,28 +256,29 @@ PathType Client::resolvePath(const Location *location,
 	 */
 	if (root.empty())
 	{
-		path = requestLocation;
+		path = relativeLocation;
 	}
 	else if (root[root.length() - 1] == '/' &&
-			 !requestLocation.empty() &&
-			 requestLocation[0] == '/')
+			 !relativeLocation.empty() &&
+			 relativeLocation[0] == '/')
 	{
-		path = root + requestLocation.substr(1);
+		path = root + relativeLocation.substr(1);
 	}
 	else if (root[root.length() - 1] != '/' &&
-			 !requestLocation.empty() &&
-			 requestLocation[0] != '/')
+			 !relativeLocation.empty() &&
+			 relativeLocation[0] != '/')
 	{
-		path = root + "/" + requestLocation;
+		path = root + "/" + relativeLocation;
 	}
 	else
 	{
-		path = root + requestLocation;
+		path = root + relativeLocation;
 	}
 
 	/*
 	 * Check filesystem.
 	 */
+	std::cout << "Checking path: " << path << " - " << stat(path.c_str(), &st) << std::endl;
 	if (stat(path.c_str(), &st) != 0)
 	{
 		return (PATH_NOT_FOUND);
@@ -452,6 +464,12 @@ void Client::build()
 	std::string	pathInfo;
 	PathType	pathType;
 
+	if (_cgiRunning)
+	{
+		readCGIOutput();
+		return ;
+	}
+
 	/*
 	 * --------------------------------------------------
 	 * 1. REDIRECTION
@@ -472,6 +490,7 @@ void Client::build()
 	 * --------------------------------------------------
 	 */
 	method = getValue("Method", _headers);
+	std::cout << "Request method: " << method << std::endl;
 
 	if (_location->GetAllowedMethods().find(method)
 		== _location->GetAllowedMethods().end())
@@ -484,7 +503,6 @@ void Client::build()
 		_status = SENDING;
 		return ;
 	}
-
 	/*
 	 * --------------------------------------------------
 	 * 3. RESOLVE URI -> FILESYSTEM
@@ -508,7 +526,7 @@ void Client::build()
 		_serverOrigin,
 		path
 	);
-
+	std::cout << "Resolved path: " << path << std::endl;
 	/*
 	 * --------------------------------------------------
 	 * 4. EXISTING REGULAR FILE
@@ -525,6 +543,7 @@ void Client::build()
 		 */
 		if (isCGI(path))
 		{
+			std::cout << "CGI script found: " << path << std::endl;
 			/*
 			 * Direct CGI request.
 			 *
@@ -543,7 +562,6 @@ void Client::build()
 				scriptName,
 				pathInfo
 			);
-
 			return ;
 		}
 
@@ -570,10 +588,8 @@ void Client::build()
 		 */
 		if (method == "POST")
 		{
-			//handlePost(path);
-			return (badRequestRes());
-			// _status = SENDING;
-			// return ;
+			handlePost(path);
+			return ;
 		}
 
 		/*
@@ -583,10 +599,8 @@ void Client::build()
 		 */
 		if (method == "DELETE")
 		{
-			// handleDelete(path);
-			return (badRequestRes());
-			// _status = SENDING;
-			// return ;
+			handleDelete(path);
+			return ;
 		}
 
 		badRequestRes();
@@ -682,6 +696,7 @@ void Client::build()
 			 *
 			 * / -> index.html
 			 */
+			std::cout << path << std::endl;
 			if (method == "GET")
 			{
 				handleGet(path);
@@ -691,18 +706,18 @@ void Client::build()
 
 			if (method == "POST")
 			{
-				// handlePost(path);
+				handlePost(path);
 				// _status = SENDING;
-				// return ;
-				return (badRequestRes());
+				return ;
+				//return (badRequestRes());
 			}
 
 			if (method == "DELETE")
 			{
-				// handleDelete(path);
+				handleDelete(path);
 				// _status = SENDING;
-				// return ;
-				return (badRequestRes());
+				return ;
+				//return (badRequestRes());
 			}
 		}
 
@@ -759,6 +774,18 @@ void Client::build()
 	 */
 	if (pathType == PATH_NOT_FOUND)
 	{
+		if (method == "POST")
+		{
+			handlePost(path);
+			return ;
+		}
+
+		if (method == "DELETE")
+		{
+			handleDelete(path);
+			return ;
+		}
+
 		if (resolveCGIIndex(
 				_requestLocation,
 				scriptPath,

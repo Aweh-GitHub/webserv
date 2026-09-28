@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/25 01:04:09 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/25 01:52:54 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/09/28 18:44:54 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,6 +19,108 @@
 #include <cstring>
 #include <cerrno>
 #include <iostream>
+#include <sstream>
+
+bool Client::parseCGIResponse(const std::string &cgiOutput)
+{
+	std::string::size_type	headerEnd;
+	std::string				headers;
+	std::string				body;
+
+	headerEnd = cgiOutput.find("\r\n\r\n");
+
+	if (headerEnd != std::string::npos)
+	{
+		headers = cgiOutput.substr(0, headerEnd);
+		body = cgiOutput.substr(headerEnd + 4);
+	}
+	else
+	{
+		headerEnd = cgiOutput.find("\n\n");
+
+		if (headerEnd == std::string::npos)
+			return (false);
+
+		headers = cgiOutput.substr(0, headerEnd);
+		body = cgiOutput.substr(headerEnd + 2);
+	}
+
+	/*
+	 * Default status.
+	 */
+	int statusCode = 200;
+	std::string statusText = "OK";
+
+	/*
+	 * Parse CGI headers.
+	 */
+	std::istringstream stream(headers);
+	std::string line;
+
+	while (std::getline(stream, line))
+	{
+		if (!line.empty() && line[line.length() - 1] == '\r')
+			line.erase(line.length() - 1);
+
+		std::string::size_type colon = line.find(':');
+
+		if (colon == std::string::npos)
+			continue;
+
+		std::string name = line.substr(0, colon);
+		std::string value = line.substr(colon + 1);
+
+		while (!value.empty() && value[0] == ' ')
+			value.erase(0, 1);
+
+		if (name == "Status")
+		{
+			std::istringstream statusStream(value);
+
+			statusStream >> statusCode;
+
+			std::getline(statusStream, statusText);
+
+			while (!statusText.empty() && statusText[0] == ' ')
+				statusText.erase(0, 1);
+		}
+		else
+		{
+			_res += name + ": " + value + "\r\n";
+		}
+	}
+
+	/*
+	 * Build actual HTTP response.
+	 */
+	std::ostringstream response;
+
+	response << "HTTP/1.1 "
+			 << statusCode
+			 << " "
+			 << statusText
+			 << "\r\n";
+
+	/*
+	 * CGI headers collected above.
+	 */
+	response << _res;
+
+	/*
+	 * CGI body length.
+	 */
+	response << "Content-Length: "
+			 << body.length()
+			 << "\r\n";
+
+	response << "\r\n";
+
+	response << body;
+
+	_res = response.str();
+
+	return (true);
+}
 
 void Client::executeCGI(const std::string &scriptPath,
 						const std::string &scriptName,
@@ -27,7 +129,6 @@ void Client::executeCGI(const std::string &scriptPath,
 	int		inPipe[2];
 	int		outPipe[2];
 	pid_t	pid;
-	int		status;
 
 	std::string::size_type	dot;
 	std::string				extension;
@@ -95,7 +196,7 @@ void Client::executeCGI(const std::string &scriptPath,
 	 * --------------------------------------------------
 	 */
 	pid = fork();
-
+	std::cout << _ip << std::endl;
 	if (pid == -1)
 	{
 		close(inPipe[0]);
@@ -195,6 +296,10 @@ void Client::executeCGI(const std::string &scriptPath,
 			   ft_itoa(_port).c_str(),
 			   1);
 
+		setenv("SERVER_NAME",
+       			removePort(_headers["Host"]).c_str(),
+       			1);
+
 		setenv("REMOTE_ADDR",
 			   _ip.c_str(),
 			   1);
@@ -210,7 +315,8 @@ void Client::executeCGI(const std::string &scriptPath,
 				   _headers["Host"].c_str(),
 				   1);
 		}
-
+		
+		setenv("HTTP_COOKIE", _headers["Cookie"].c_str(), 1);
 		/*
 		 * Build argv.
 		 *
@@ -257,13 +363,20 @@ void Client::executeCGI(const std::string &scriptPath,
 	{
 		if (_bodyLength > 0)
 		{
-			/*
-			 * You should ideally write exactly the body,
-			 * not the complete HTTP request.
-			 */
-			/*
-			 * write(inPipe[1], body, bodyLength);
-			 */
+			size_t total = _startBodyHeader;
+
+   			while (total < _request.size())
+    		{
+        		ssize_t n = write(inPipe[1],
+             	       	_request.data() + total,
+                        _request.size() - total);
+
+        		if (n <= 0)
+        		{
+        		    break;
+        		}
+        		total += static_cast<size_t>(n);
+			}
 		}
 	}
 
@@ -273,41 +386,75 @@ void Client::executeCGI(const std::string &scriptPath,
 	close(inPipe[1]);
 
 	/*
-	 * --------------------------------------------------
-	 * Read CGI output
-	 * --------------------------------------------------
+	 * Keep CGI output nonblocking. The response is drained by
+	 * readCGIOutput() while the client remains in WRITING.
 	 */
-	_res.clear();
-
-	char	buffer[4096];
-	ssize_t	n;
-
-	while ((n = read(outPipe[0], buffer, sizeof(buffer))) > 0)
+	if (fcntl(outPipe[0], F_SETFL, O_NONBLOCK) == -1)
 	{
-		_res.append(buffer, n);
+		close(outPipe[0]);
+		waitpid(pid, NULL, 0);
+		badRequestRes();
+		return ;
 	}
 
-	close(outPipe[0]);
+	_res.clear();
+	_cgiOutput.clear();
+	_cgiFd = outPipe[0];
+	_cgiPid = pid;
+	_cgiRunning = true;
+}
 
-	/*
-	 * Wait for CGI process.
-	 */
-	waitpid(pid, &status, 0);
+void Client::readCGIOutput()
+{
+	char	buffer[4096];
+	ssize_t	n;
+	int		status;
+	pid_t	waitResult;
 
-	_cgiRunning = false;
+	if (_cgiFd != -1)
+	{
+		while (true)
+		{
+			n = read(_cgiFd, buffer, sizeof(buffer));
+			if (n > 0)
+			{
+				_cgiOutput.append(buffer, n);
+				continue;
+			}
+			if (n == 0)
+			{
+				close(_cgiFd);
+				_cgiFd = -1;
+				if (!parseCGIResponse(_cgiOutput))
+				{
+					_cgiRunning = false;
+					badRequestRes();
+					return ;
+				}
+				break;
+			}
+			if (errno == EAGAIN || errno == EWOULDBLOCK)
+				break;
 
-	/*
-	 * CGI output already contains headers such as:
-	 *
-	 * Content-Type: text/html
-	 *
-	 * and:
-	 *
-	 * Status: 200 OK
-	 *
-	 * You need a parser here to convert CGI headers
-	 * into your HTTP response.
-	 */
+			close(_cgiFd);
+			_cgiFd = -1;
+			_cgiRunning = false;
+			badRequestRes();
+			return ;
+		}
+	}
 
-	_status = SENDING;
+	waitResult = waitpid(_cgiPid, &status, WNOHANG);
+	if (waitResult == _cgiPid)
+	{
+		_cgiPid = -1;
+		_cgiRunning = false;
+		_status = SENDING;
+	}
+	else if (waitResult == -1)
+	{
+		_cgiPid = -1;
+		_cgiRunning = false;
+		badRequestRes();
+	}
 }

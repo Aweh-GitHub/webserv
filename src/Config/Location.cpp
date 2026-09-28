@@ -14,7 +14,7 @@
 #include "__internal__.hpp"
 #include <iostream>
 
-Location::Location() : _name(), _pathRoot(), _indexFiles(), _pathUploadStore(), _allowedMethods(), _clientMaxBodySize(1048576), _autoIndex()
+Location::Location() : _name(), _pathRoot(), _indexFiles(), _pathUploadStore(), _allowedMethods(), _clientMaxBodySize(1048576), _autoIndex(false), _redirectCode(0), _redirectPath()
 {
 
 }
