@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/31 19:52:27 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/29 00:05:22 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/09/29 02:51:15 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -351,6 +351,8 @@ void Client::build()
 
 	if (pathType == PATH_DIRECTORY)
 	{
+		std::cout << "Handling directory: " << path << std::endl;
+
 		if (resolveIndex(path))
 		{
 			if (isCGI(path))
@@ -401,6 +403,19 @@ void Client::build()
 			}
 		}
 
+		if (method == "POST")
+		{
+			std::cout << "Handling POST request for directory: " << path << std::endl;
+			handlePost(path);
+			return ;
+		}
+
+		if (method == "DELETE")
+		{
+			handleDelete(path);
+			return ;
+		}
+
 		if (_location->GetAutoIndex())
 		{
 			if (handleIndex(path))
@@ -416,18 +431,6 @@ void Client::build()
 
 	if (pathType == PATH_NOT_FOUND)
 	{
-		if (method == "POST")
-		{
-			handlePost(path);
-			return ;
-		}
-
-		if (method == "DELETE")
-		{
-			handleDelete(path);
-			return ;
-		}
-
 		if (resolveCGIIndex(
 				_requestLocation,
 				scriptPath,
@@ -445,6 +448,18 @@ void Client::build()
 
 				return ;
 			}
+		}
+		
+		if (method == "POST")
+		{
+			handlePost(path);
+			return ;
+		}
+
+		if (method == "DELETE")
+		{
+			handleDelete(path);
+			return ;
 		}
 
 		ErrorResponce(404);

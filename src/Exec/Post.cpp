@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/22 14:57:48 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/29 00:59:50 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/09/29 03:55:53 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -143,8 +143,10 @@ void	Client::handlePost(const std::string &endPath)
 	size_t		bodyStart;
 
 	filePath = endPath;
+
 	if (!_location->GetPathUploadStore().empty())
 	{
+		
 		fileName = getUploadFileName(_requestLocation);
 		if (fileName.empty())
 			return (badRequestRes());
@@ -160,6 +162,7 @@ void	Client::handlePost(const std::string &endPath)
 		return (badRequestRes());
 	body = _request.substr(bodyStart, _bodyLength);
 	contentType = getValue("Content-Type", _headers);
+	std::cout << "Handling POST request for file: " << filePath << std::endl;
 	if (getMultipartBoundary(contentType, boundary))
 	{
 		if (!writeMultipartFiles(body, boundary,

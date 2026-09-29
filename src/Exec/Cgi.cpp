@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/25 01:04:09 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/28 23:55:17 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/09/29 04:24:57 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,8 +18,24 @@
 #include <fcntl.h>
 #include <cstring>
 #include <cerrno>
+#include <cctype>
 #include <iostream>
 #include <sstream>
+
+static std::string makeCGIHeaderName(const std::string &headerName)
+{
+	std::string name = "HTTP_";
+
+	for (size_t i = 0; i < headerName.length(); ++i)
+	{
+		if (headerName[i] == '-')
+			name += '_';
+		else
+			name += static_cast<char>(std::toupper(
+				static_cast<unsigned char>(headerName[i])));
+	}
+	return (name);
+}
 
 bool Client::parseCGIResponse(const std::string &cgiOutput)
 {
@@ -179,74 +195,46 @@ void Client::executeCGI(const std::string &scriptPath,
 		close(outPipe[0]);
 		close(outPipe[1]);
 
-		setenv("GATEWAY_INTERFACE",
-			   "CGI/1.1",
-			   1);
+		std::vector<std::string> envStrings;
+		std::vector<char *> env;
+		std::string envName;
 
-		setenv("REQUEST_METHOD",
-			   _headers["Method"].c_str(),
-			   1);
-
-		setenv("SCRIPT_FILENAME",
-			   scriptPath.c_str(),
-			   1);
-
-		setenv("SCRIPT_NAME",
-			   scriptName.c_str(),
-			   1);
-
-		setenv("PATH_INFO",
-			   pathInfo.c_str(),
-			   1);
-
-		setenv("REQUEST_URI",
-			   _requestLocation.c_str(),
-			   1);
-
-		setenv("QUERY_STRING",
-			   _requestUrlQuery.c_str(),
-			   1);
-
+		envStrings.push_back("GATEWAY_INTERFACE=CGI/1.1");
+		envStrings.push_back("REQUEST_METHOD=" + _headers["Method"]);
+		envStrings.push_back("SCRIPT_FILENAME=" + scriptPath);
+		envStrings.push_back("SCRIPT_NAME=" + scriptName);
+		envStrings.push_back("PATH_INFO=" + pathInfo);
+		envStrings.push_back("REQUEST_URI=" + _requestLocation);
+		envStrings.push_back("QUERY_STRING=" + _requestUrlQuery);
 		if (_headers.find("Content-Type") != _headers.end())
-		{
-			setenv("CONTENT_TYPE",
-				   _headers["Content-Type"].c_str(),
-				   1);
-		}
-
+			envStrings.push_back("CONTENT_TYPE=" + _headers["Content-Type"]);
 		if (_headers.find("Content-Length") != _headers.end())
+			envStrings.push_back("CONTENT_LENGTH=" + _headers["Content-Length"]);
+		envStrings.push_back("SERVER_PROTOCOL=" + _headers["Version"]);
+		envStrings.push_back("SERVER_PORT=" + ft_itoa(_port));
+		envStrings.push_back("SERVER_NAME=" + removePort(_headers["Host"]));
+		envStrings.push_back("REMOTE_ADDR=" + _ip);
+		envStrings.push_back("REDIRECT_STATUS=1");
+		std::cerr << _headers["Content-Length"] << " ?= " << _bodyLength << std::endl;
+		for (std::map<std::string, std::string>::const_iterator header =
+				_headers.begin(); header != _headers.end(); ++header)
 		{
-			setenv("CONTENT_LENGTH",
-				   _headers["Content-Length"].c_str(),
-				   1);
+			//std::cerr << header->first << ": " << header->second << std::endl;
+			if (header->first == "Method" ||
+				header->first == "Location" ||
+				header->first == "Version" ||
+				header->first == "Content-Type" ||
+				header->first == "Content-Length")
+				continue;
+			envName = makeCGIHeaderName(header->first);
+			envStrings.push_back(envName + "=" + header->second);
 		}
-
-		setenv("SERVER_PROTOCOL",
-			   "HTTP/1.1",
-			   1);
-
-		setenv("SERVER_PORT",
-			   ft_itoa(_port).c_str(),
-			   1);
-
-		setenv("SERVER_NAME",
-       			removePort(_headers["Host"]).c_str(),
-       			1);
-
-		setenv("REMOTE_ADDR",
-			   _ip.c_str(),
-			   1);
-
-		setenv("REDIRECT_STATUS", "1", 1);
-
-		if (_headers.find("Host") != _headers.end())
+		for (size_t i = 0; i < envStrings.size(); ++i)
 		{
-			setenv("HTTP_HOST",
-				   _headers["Host"].c_str(),
-				   1);
+			//std::cerr << "Env: " << envStrings[i] << std::endl;
+			env.push_back(const_cast<char *>(envStrings[i].c_str()));
 		}
-		
-		setenv("HTTP_COOKIE", _headers["Cookie"].c_str(), 1);
+		env.push_back(NULL);
 
 		char *argv[3];
 
@@ -254,7 +242,7 @@ void Client::executeCGI(const std::string &scriptPath,
 		argv[1] = const_cast<char *>(scriptPath.c_str());
 		argv[2] = NULL;
 
-		execve(executable.c_str(), argv, environ);
+		execve(executable.c_str(), argv, &env[0]);
 
 		exit(1);
 	}
@@ -330,7 +318,7 @@ void Client::readCGIOutput()
 				}
 				break;
 			}
-			if (errno == EAGAIN || errno == EWOULDBLOCK)
+			if (n < 0)
 				break;
 
 			close(_cgiFd);
