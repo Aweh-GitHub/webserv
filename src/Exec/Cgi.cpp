@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/25 01:04:09 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/01 05:55:02 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/01 07:25:12 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -243,44 +243,64 @@ void Client::executeCGI(const std::string &scriptPath,
 
 	close(inPipe[0]);
 	close(outPipe[1]);
-
-	if (_headers["Method"] == "POST" ||
-		_headers["Method"] == "PUT")
+	if (fcntl(inPipe[1], F_SETFL, O_NONBLOCK) == -1 ||
+		fcntl(outPipe[0], F_SETFL, O_NONBLOCK) == -1)
 	{
-		if (_bodyLength > 0)
-		{
-			size_t total = _startBodyHeader;
-
-   			while (total < _request.size())
-    		{
-        		ssize_t n = write(inPipe[1],
-             	       	_request.data() + total,
-                        _request.size() - total);
-
-        		if (n <= 0)
-        		{
-        		    break;
-        		}
-        		total += static_cast<size_t>(n);
-			}
-		}
-	}
-
-	close(inPipe[1]);
-
-	if (fcntl(outPipe[0], F_SETFL, O_NONBLOCK) == -1)
-	{
+		close(inPipe[1]);
 		close(outPipe[0]);
+		kill(pid, SIGKILL);
 		waitpid(pid, NULL, 0);
 		ErrorResponce(500);
 		return ;
 	}
 
 	_cgiOutput.clear();
-	_cgiFd = outPipe[0];
-	WebServ::addToPoll(_cgiFd);
 	_cgiPid = pid;
 	_cgiRunning = true;
+	_cgiFd = outPipe[0];
+	WebServ::addToPoll(_cgiFd);
+	if ((_headers["Method"] == "POST" ||
+		_headers["Method"] == "PUT") && _bodyLength > 0)
+	{
+		_cgiInputFd = inPipe[1];
+		_cgiInputOffset = _startBodyHeader;
+		WebServ::addToPoll(_cgiInputFd);
+		updatePollEvent(_cgiInputFd, POLLOUT);
+	}
+	else
+	{
+		close(inPipe[1]);
+	}
+}
+
+void Client::writeCGIInput()
+{
+	ssize_t n;
+
+	if (_cgiInputFd == -1)
+		return ;
+	n = write(_cgiInputFd, _request.data() + _cgiInputOffset,
+		_request.size() - _cgiInputOffset);
+	if (n > 0)
+	{
+		_cgiInputOffset += static_cast<size_t>(n);
+		if (_cgiInputOffset == _request.size())
+		{
+			close(_cgiInputFd);
+			_cgiInputFd = -1;
+		}
+	}
+	else if (n < 0)
+	{
+		close(_cgiInputFd);
+		_cgiInputFd = -1;
+		kill(_cgiPid, SIGKILL);
+		waitpid(_cgiPid, NULL, 0);
+		_cgiPid = -1;
+		_cgiRunning = false;
+		ErrorResponce(500);
+		updatePollEvent(_fd, POLLOUT);
+	}
 }
 
 void Client::readCGIOutput()
@@ -292,37 +312,31 @@ void Client::readCGIOutput()
 
 	if (_cgiFd != -1)
 	{
-		while (true)
+		n = read(_cgiFd, buffer, sizeof(buffer));
+		#ifndef DEBUG
+		std::cout << "Read " << n << " bytes from CGI output." << std::endl;
+		#endif
+		if (n > 0)
+			_cgiOutput.append(buffer, n);
+		else if (n == 0)
 		{
-			n = read(_cgiFd, buffer, sizeof(buffer));
-			#ifndef DEBUG
-			std::cout << "Read " << n << " bytes from CGI output." << std::endl;
-			#endif
-			if (n > 0)
+			close(_cgiFd);
+			_cgiFd = -1;
+			if (!parseCGIResponse(_cgiOutput))
 			{
-				_cgiOutput.append(buffer, n);
-				continue;
+				_cgiRunning = false;
+				ErrorResponce(502);
+				updatePollEvent(_fd, POLLOUT);
+				return ;
 			}
-			if (n == 0)
-			{
-				close(_cgiFd);
-				_cgiFd = -1;
-				
-				if (!parseCGIResponse(_cgiOutput))
-				{
-					_cgiRunning = false;
-					ErrorResponce(502);
-					return ;
-				}
-				break;
-			}
-			if (errno == EAGAIN || errno == EWOULDBLOCK)
-				break;
-
+		}
+		else
+		{
 			close(_cgiFd);
 			_cgiFd = -1;
 			_cgiRunning = false;
 			ErrorResponce(500);
+			updatePollEvent(_fd, POLLOUT);
 			return ;
 		}
 	}
@@ -333,11 +347,13 @@ void Client::readCGIOutput()
 		_cgiPid = -1;
 		_cgiRunning = false;
 		_status = SENDING;
+		updatePollEvent(_fd, POLLOUT);
 	}
 	else if (waitResult == -1)
 	{
 		_cgiPid = -1;
 		_cgiRunning = false;
 		ErrorResponce(500);
+		updatePollEvent(_fd, POLLOUT);
 	}
 }

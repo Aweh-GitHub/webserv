@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/26 00:36:24 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/01 05:52:10 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/01 07:25:11 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,11 +65,17 @@ int	main(int ac, char **av)
 				{
 					bool isClientFd = (fd == srv._A[j]->getFd());
 					bool isCgiFd = (fd == srv._A[j]->getCgiFd());
+					bool isCgiInputFd = (fd == srv._A[j]->getCgiInputFd());
 
-					if (isClientFd || isCgiFd)
+					if (isClientFd || isCgiFd || isCgiInputFd)
 					{
-						srv._A[j]->action();
+						srv._A[j]->action(fd, revents);
 						if (isCgiFd && srv._A[j]->getCgiFd() == -1)
+						{
+							srv._pollFds.erase(srv._pollFds.begin() + i);
+							removed = true;
+						}
+						else if (isCgiInputFd && srv._A[j]->getCgiInputFd() == -1)
 						{
 							srv._pollFds.erase(srv._pollFds.begin() + i);
 							removed = true;

@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 01:52:12 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/01 05:50:12 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/01 07:25:10 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,6 +32,8 @@ Client::Client(int fd, int port, std::string &ip) :
 	_startBodyHeader = 0;
 	_status = READING;
 	_cgiRunning = false;
+	_cgiInputFd = -1;
+	_cgiInputOffset = 0;
 	_cgiFd = -1;
 	_cgiPid = -1;
 }
@@ -153,6 +155,7 @@ void	Client::getRequest()
         if (_bodyReceived == _bodyLength)
         {
             _status = WRITING;
+			updatePollEvent(_fd, POLLOUT);
             return;
         }
 
@@ -203,6 +206,22 @@ void	Client::action()
 	{
 		WebServ::_closeConnection = _fd;
 	}
+}
+
+void	Client::action(int fd, short revents)
+{
+	if (fd == _cgiInputFd)
+		writeCGIInput();
+	else if (fd == _cgiFd)
+		readCGIOutput();
+	else
+		action();
+	(void)revents;
+}
+
+int	Client::getCgiInputFd()
+{
+	return (_cgiInputFd);
 }
 
 int	Client::getPort()

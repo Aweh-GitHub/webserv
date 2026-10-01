@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 01:05:24 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/01 06:16:30 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/01 07:25:16 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,6 +39,8 @@ class Client : public AAction
 		Client(int fd, int port, std::string &ip);
 		~Client();
 		void	action();
+		void	action(int fd, short revents);
+		int		getCgiInputFd();
 		void	build();
 		int		getPort();
 	private:
@@ -71,6 +73,7 @@ class Client : public AAction
 		void	executeCGI(const std::string &scriptPath,
 						const std::string &scriptName,
 						const std::string &pathInfo);
+		void	writeCGIInput();
 		void	readCGIOutput();
 		bool	parseCGIResponse(const std::string &cgiOutput);
 
@@ -102,6 +105,8 @@ class Client : public AAction
 		ssize_t			_maxBodyLength;
 		bool			_cgiRunning;
 		bool			_resReady;
+		int			_cgiInputFd;
+			size_t		_cgiInputOffset;
 		pid_t			_cgiPid;
 		std::string		_cgiOutput;
 

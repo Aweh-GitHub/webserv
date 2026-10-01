@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/26 20:43:31 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/01 02:37:35 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/01 07:25:14 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,8 +19,10 @@ class AAction
 	public:
 		virtual		~AAction();
 		virtual void	action() = 0;
+		virtual void	action(int fd, short revents);
 		virtual int	getFd();
 		virtual int	getCgiFd();
+		virtual int	getCgiInputFd();
 	protected:
 		int	_fd;
 		int	_cgiFd;
