@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 01:12:14 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/28 23:18:19 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/01 03:47:45 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,7 @@
 Socket::Socket(int fd, size_t port, const std::string &ip) : _port(port), _ip(ip)
 {
 	_fd = fd;
+	_cgiFd = -1;
 }
 
 Socket::~Socket() {}

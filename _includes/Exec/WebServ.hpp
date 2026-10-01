@@ -17,12 +17,6 @@
 #include "Config.hpp"
 #include <vector>
 
-/*enum	Action
-{
-	SOCKET,
-	CLIENT
-};*/
-
 struct ListeningSocket
 {
 	int fd;
@@ -35,15 +29,11 @@ class WebServ
 		WebServ();
 		~WebServ();
 		int		newSocket(sa_family_t sFamily, in_port_t sPort, in_addr_t sAddr);
-		//AAction	*newAction(int fd, Action type);
 		static int		addToPoll(int fd);
 		static void		addToAction(AAction *a);
 		static int		&closeConnection();
 		static void		quit();
 		int	init();
-		//void	run();
-		//void	stop();
-		//void	reload();
 		static std::vector<pollfd> _pollFds;
 		static std::vector<AAction*> _A;
 		static int				_closeConnection;

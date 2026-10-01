@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 01:52:12 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/29 00:57:05 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/01 05:50:12 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,7 +21,8 @@ Client::Client(int fd, int port, std::string &ip) :
 	_ip(ip),
 	_serverOrigin(NULL),
 	_location(NULL),
-	_status(READING)
+	_status(READING),
+	_resReady(false)
 {
 	_fd = fd;
 	_sBytes = 0;
@@ -37,12 +38,12 @@ Client::Client(int fd, int port, std::string &ip) :
 
 Client::~Client() {}
 
-static void	updatePoll(int fd)
+void	updatePollEvent(int fd, short events)
 {
 	for ( unsigned long int i = 0; i < WebServ::_pollFds.size(); i++)
 	{
 		if (fd == WebServ::_pollFds[i].fd)
-			WebServ::_pollFds[i].events = POLLOUT;
+			WebServ::_pollFds[i].events = events;
 	}
 }
 
@@ -51,7 +52,7 @@ bool	Client::setServerLocation()
 	const std::string	requestDomain = removePort(getValue("Host", _headers));
 	_serverOrigin = WebServ::_config.TryFindServer(_ip, _port, requestDomain);
 	if (_serverOrigin == NULL)
-		return (badRequestRes(), false);
+		return (ErrorResponce(400), false);
 	splitUrl(getValue("Location", _headers), _requestLocation, _requestUrlQuery);
 	if (!isSafeRequestPath(_requestLocation))
 	{
@@ -59,9 +60,8 @@ bool	Client::setServerLocation()
     	return (false);
 	}
 	_location = _serverOrigin->TryFindLocation(_requestLocation);
-	//_location->Print();
 	if (_location == NULL)
-		return (badRequestRes(), false);
+		return (ErrorResponce(400), false);
 	return (true);
 }
 
@@ -72,7 +72,6 @@ ssize_t	Client::maxBodyLength()
 	long		contentLength;
 	ssize_t		maxBodySize;
 
-	// Location overrides server configuration
 	if (_location && _location->GetClientMaxBodySize() != 0)
 		maxBodySize = _location->GetClientMaxBodySize();
 	else
@@ -91,14 +90,14 @@ ssize_t	Client::maxBodyLength()
 	// Invalid number
 	if (end == contentLengthStr.c_str() || *end != '\0')
 	{
-		badRequestRes();
+		ErrorResponce(400);
 		return (-1);
 	}
 
 	// Negative Content-Length
 	if (contentLength < 0)
 	{
-		badRequestRes();
+		ErrorResponce(400);
 		return (-1);
 	}
 	_bodyLength = contentLength;
@@ -106,7 +105,7 @@ ssize_t	Client::maxBodyLength()
 	if (static_cast<size_t>(contentLength) > static_cast<size_t>(maxBodySize))
 	{
 		// 413 Payload Too Large, preferably
-		badRequestRes();
+		ErrorResponce(413);
 		return (-1);
 	}
 
@@ -129,7 +128,7 @@ void	Client::getRequest()
             return;
 		if (_headers.empty())
 			if (!parseHeader())
-				return (badRequestRes());
+				return (ErrorResponce(400));
 		if (!_serverOrigin && !_location)
 			if (!setServerLocation())
 				return;
@@ -147,7 +146,7 @@ void	Client::getRequest()
 
 		if (_bodyReceived > _bodyLength)
 		{
-			badRequestRes();
+			ErrorResponce(400);
 			return;
 		}
         // Complete request
@@ -162,22 +161,27 @@ void	Client::getRequest()
     }
     else if (n == 0)
     {
-        close(_fd);
         WebServ::closeConnection() = _fd;
     }
 }
 
 void	Client::handleRequest()
 {
-	//_res = _request;
 	build();
-	//std::cout << _res << std::endl;
-	updatePoll(_fd);
+	if (_cgiRunning)
+		updatePollEvent(_fd, 0);
+	else
+		updatePollEvent(_fd, POLLOUT);
 }
 
 void	Client::sendResponce()
 {
 	//std::cout << _res << std::endl;
+	if ( _resReady == false )
+	{
+		_res = _resHeader + _resBody;
+		_resReady = true;
+	}
 	ssize_t n = send(_fd, _res.c_str() + _sBytes, _res.size() - _sBytes, 0);
 	if (n > 0)
 	{
@@ -197,7 +201,6 @@ void	Client::action()
 		sendResponce();
 	else if (_status == TERMINATED)
 	{
-		close(_fd);
 		WebServ::_closeConnection = _fd;
 	}
 }
@@ -205,6 +208,26 @@ void	Client::action()
 int	Client::getPort()
 {
 	return (_port);
+}
+
+bool	Client::internalRedirection(std::string &location)
+{
+	const Location	*targetLocation;
+	std::string		path;
+	std::string		body;
+
+	targetLocation = _serverOrigin->TryFindLocation(location);
+	if (targetLocation == NULL)
+		return (false);
+	if (resolvePath(targetLocation, location, _serverOrigin, path) != PATH_FILE)
+		return (false);
+	std::cout << "Internal redirection to: " << path << std::endl;
+	if (!getFileContent(path, body))
+		return (false);
+	_resHeader = getHeader(404, getMimeType(path), body.size());
+	_resBody = body;
+	_status = SENDING;
+	return (true);
 }
 
 std::map<int, std::string> Client::createRedirCode()

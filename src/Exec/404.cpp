@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/18 02:20:46 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/29 01:07:39 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/01 05:56:07 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,14 +25,17 @@ void	Client::ErrorResponce(int error)
 		it = _serverOrigin->GetErrorPages().find(static_cast<size_t>(error));
 	if (_serverOrigin != NULL &&
 		it != _serverOrigin->GetErrorPages().end())
-		path = it->second;
-	else
-	{
-		std::ostringstream defaultPage;
-
-		defaultPage << "./template/" << error << ".html";
-		path = defaultPage.str();
-	}
+		{
+			path = it->second;
+			if(!internalRedirection(path))
+			{
+				std::ostringstream defaultPage;
+				defaultPage << "./template/" << error << ".html";
+				path = defaultPage.str();
+			}
+			else
+				return ;
+		}
 
 	if (!getFileContent(path, body))
 	{
@@ -41,8 +44,8 @@ void	Client::ErrorResponce(int error)
 		body += "</center></h1></body></html>";
 	}
 
-	_res = getHeader(error, "text/html", body.length());
-	_res += body;
+	_resHeader = getHeader(error, "text/html", body.length());
+	_resBody += body;
 	_status = SENDING;
 }
 

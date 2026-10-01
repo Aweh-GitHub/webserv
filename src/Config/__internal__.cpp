@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   __internal__.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: thantoni <thantoni@student.42.fr>          +#+  +:+       +#+        */
+/*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/29 15:08:34 by thantoni          #+#    #+#             */
-/*   Updated: 2026/09/12 17:48:57 by thantoni         ###   ########.fr       */
+/*   Updated: 2026/09/29 16:41:16 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -230,20 +230,22 @@ size_t parseAndVerifyPort(const std::string& value)
 
 void verifyDomain(const std::string& domain)
 {
-	if (domain.empty() || domain.length() > 253)
-		throwLineError("Domain length is too long or too short. (1 - 253)");
-	if (domain[0] == '.' || domain[0] == '-' || domain[domain.length() - 1] == '.' || domain[domain.length() - 1] == '-')
-		throwLineError("Starting or ending with invalid character ");
-	for (size_t i = 0; i < domain.length(); ++i)
-	{
-		char c;
-		
-		c = domain[i];
-		if (!std::isalnum(c) && c != '.' && c != '-')
-			throwLineError("Invalid character '" + toString(c) + "'");
-		if (c == '.' && i > 0 && domain[i - 1] == '.')
-			throwLineError("Invalid character '" + toString(c) + "'");
-	}
+    if (domain.empty() || domain.length() > 253)
+        throwLineError("Domain length is too long or too short. (1 - 253)");
+    if (domain[0] == '.' || domain[0] == '-' || domain[domain.length() - 1] == '.' || domain[domain.length() - 1] == '-')
+        throwLineError("Starting or ending with invalid character");
+
+    for (size_t i = 0; i < domain.length(); ++i)
+    {
+        char c = domain[i];
+        
+        if (!std::isalnum(c) && c != '.' && c != '-')
+            throwLineError("Invalid character '" + toString(c) + "' in domain: " + domain);
+        if (c == '.' && i > 0 && domain[i - 1] == '.')
+            throwLineError("Consecutive dots are forbidden in domain: " + domain);
+        if ((c == '-' && i > 0 && domain[i - 1] == '.') || (c == '.' && i > 0 && domain[i - 1] == '-'))
+            throwLineError("Invalid combination '.-' or '-.' : " + domain);
+    }
 }
 
 size_t parseAndVerifyRedirectCode(const std::string& value)

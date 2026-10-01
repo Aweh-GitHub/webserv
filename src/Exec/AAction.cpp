@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 04:15:09 by lupayet           #+#    #+#             */
-/*   Updated: 2026/08/27 04:48:22 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/01 02:38:04 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,4 +16,10 @@ int	AAction::getFd()
 {
 	return (_fd);
 }
+
+int	AAction::getCgiFd()
+{
+	return (_cgiFd);
+}
+
 AAction::~AAction() {}

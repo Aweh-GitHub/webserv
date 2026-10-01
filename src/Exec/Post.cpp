@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/22 14:57:48 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/29 03:55:53 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/01 05:53:29 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -149,7 +149,7 @@ void	Client::handlePost(const std::string &endPath)
 		
 		fileName = getUploadFileName(_requestLocation);
 		if (fileName.empty())
-			return (badRequestRes());
+			return (ErrorResponce(400));
 		filePath = _location->GetPathUploadStore();
 		if (filePath[filePath.length() - 1] != '/')
 			filePath += '/';
@@ -159,7 +159,7 @@ void	Client::handlePost(const std::string &endPath)
 	bodyStart = _startBodyHeader;
 	if (bodyStart > _request.length() ||
 		_request.length() - bodyStart < static_cast<size_t>(_bodyLength))
-		return (badRequestRes());
+		return (ErrorResponce(400));
 	body = _request.substr(bodyStart, _bodyLength);
 	contentType = getValue("Content-Type", _headers);
 	std::cout << "Handling POST request for file: " << filePath << std::endl;
@@ -167,26 +167,26 @@ void	Client::handlePost(const std::string &endPath)
 	{
 		if (!writeMultipartFiles(body, boundary,
 			_location->GetPathUploadStore(), filePath))
-			return (badRequestRes());
-		_res = "HTTP/1.1 201 Created\r\n";
-		_res += "Content-Length: 0\r\n";
-		_res += "Connection: close\r\n\r\n";
+			return (ErrorResponce(400));
+		_resHeader = "HTTP/1.1 201 Created\r\n";
+		_resHeader += "Content-Length: 0\r\n";
+		_resHeader += "Connection: close\r\n\r\n";
 		_status = SENDING;
 		return ;
 	}
 
 	file.open(filePath.c_str(), std::ios::binary | std::ios::trunc);
 	if (!file.is_open())
-		return (badRequestRes());
+		return (ErrorResponce(500));
 	if (_bodyLength > 0)
 		file.write(_request.data() + bodyStart, _bodyLength);
 	file.close();
 	if (file.fail())
-		return (badRequestRes());
+		return (ErrorResponce(500));
 
-	_res = "HTTP/1.1 201 Created\r\n";
-	_res += "Content-Length: 0\r\n";
-	_res += "Connection: close\r\n\r\n";
+	_resHeader = "HTTP/1.1 201 Created\r\n";
+	_resHeader += "Content-Length: 0\r\n";
+	_resHeader += "Connection: close\r\n\r\n";
 	_status = SENDING;
 }
 
@@ -200,28 +200,27 @@ void	Client::handleDelete(const std::string &endPath)
 	{
 		fileName = getUploadFileName(_requestLocation);
 		if (fileName.empty())
-			return (badRequestRes());
+			return (ErrorResponce(400));
 		filePath = _location->GetPathUploadStore();
 		if (filePath[filePath.length() - 1] != '/')
 			filePath += '/';
 		filePath += fileName;
 	}
-	std::cout << "Deleting file: " << filePath << std::endl;
 	if (std::remove(filePath.c_str()) != 0)
 	{
 		if (errno == ENOENT)
 		{
-			_res = "HTTP/1.1 404 Not Found\r\n";
-			_res += "Content-Length: 0\r\n";
-			_res += "Connection: close\r\n\r\n";
+			_resHeader = "HTTP/1.1 404 Not Found\r\n";
+			_resHeader += "Content-Length: 0\r\n";
+			_resHeader += "Connection: close\r\n\r\n";
 			_status = SENDING;
 			return ;
 		}
-		return (badRequestRes());
+		return (ErrorResponce(500));
 	}
 
-	_res = "HTTP/1.1 204 No Content\r\n";
-	_res += "Content-Length: 0\r\n";
-	_res += "Connection: close\r\n\r\n";
+	_resHeader = "HTTP/1.1 204 No Content\r\n";
+	_resHeader += "Content-Length: 0\r\n";
+	_resHeader += "Connection: close\r\n\r\n";
 	_status = SENDING;
 }

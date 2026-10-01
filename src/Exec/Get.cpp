@@ -6,25 +6,21 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/04 08:02:25 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/18 00:09:24 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/01 05:54:16 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Client.hpp"
 
-
 bool Client::handleGet(std::string &path)
 {
 	std::string	err("./template/404.html");
-	std::string	body;
-	if (!getFileContent(path, body))
+	if (!getFileContent(path, _resBody))
 	{
-		_res += getHeader(404, "text/html", body.size());
-		getFileContent(err, body);
-		_res += body;
+		ErrorResponce(404);
 		return (false);
 	}
-	_res += getHeader(200, getMimeType(path), body.size());
-	_res += body;
+	_resHeader = getHeader(200, getMimeType(path), _resBody.size());
+	//_res += _resBody;
 	return (true);
 }

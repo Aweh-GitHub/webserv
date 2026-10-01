@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/03 09:28:28 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/20 03:12:12 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/01 05:57:24 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -119,15 +119,5 @@ bool	Client::parseHeader()
     {
         return false;
     }
-
-    // Determine body size
-    /*std::map<std::string, std::string>::iterator it;
-
-    it = _headers.find("Content-Length");
-
-    if (it != _headers.end())
-    {
-        _bodyLength = ft_atoi(it->second.c_str());
-    }*/
     return true;
 }

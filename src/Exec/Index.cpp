@@ -6,39 +6,12 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/04 08:05:16 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/18 01:04:01 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/01 05:50:37 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Client.hpp"
 #include "WebPage.hpp"
-
-// std::string	Client::indexDir(std::string &path)
-// {
-// 	WebPage	p(path);
-// 	std::ostringstream body;
-
-// 	body << "<ul>";
-// 	DIR *dir = opendir(path.c_str());
-// 	struct dirent	*ent = readdir(dir);
-// 	while (ent != NULL)
-// 	{
-// 		body << "<li><a href=\"" << ent->d_name << "\">" << ent->d_name << "</li>";
-// 		ent = readdir(dir);
-// 	};
-// 	body << "</ul>";
-// 	p.addToBody(body.str());
-// 	return (p.str());
-// }
-
-// bool Client::handleIndex(std::string &path)
-// {
-// 	std::string	body = indexDir(path);
-// 	_res += getHeader(200, "text/html", body.size());
-// 	_res += body;
-// 	return (true);
-// }
-
 #include <dirent.h>
 #include <sstream>
 #include <string>
@@ -79,7 +52,6 @@ std::string	Client::indexDir(std::string &path)
 	{
 		std::string name = ent->d_name;
 
-		// Don't expose the special directory entries.
 		if (name == "." || name == "..")
 			continue;
 
@@ -107,7 +79,7 @@ bool	Client::handleIndex(std::string &path)
 	if (body.empty())
 		return (false);
 
-	_res += getHeader(200, "text/html", body.size());
-	_res += body;
+	_resHeader += getHeader(200, "text/html", body.size());
+	_resBody += body;
 	return (true);
 }

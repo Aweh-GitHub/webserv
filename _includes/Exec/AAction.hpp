@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   AAction.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: thantoni <thantoni@student.42.fr>          +#+  +:+       +#+        */
+/*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/26 20:43:31 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/09 12:45:48 by thantoni         ###   ########.fr       */
+/*   Updated: 2026/10/01 02:37:35 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,8 @@ class AAction
 		virtual		~AAction();
 		virtual void	action() = 0;
 		virtual int	getFd();
+		virtual int	getCgiFd();
 	protected:
 		int	_fd;
+		int	_cgiFd;
 };
