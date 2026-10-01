@@ -149,7 +149,7 @@ void	Client::handlePost(const std::string &endPath)
 		
 		fileName = getUploadFileName(_requestLocation);
 		if (fileName.empty())
-			return (badRequestRes());
+			return (ErrorResponce(400));
 		filePath = _location->GetPathUploadStore();
 		if (filePath[filePath.length() - 1] != '/')
 			filePath += '/';
@@ -159,7 +159,7 @@ void	Client::handlePost(const std::string &endPath)
 	bodyStart = _startBodyHeader;
 	if (bodyStart > _request.length() ||
 		_request.length() - bodyStart < static_cast<size_t>(_bodyLength))
-		return (badRequestRes());
+		return (ErrorResponce(400));
 	body = _request.substr(bodyStart, _bodyLength);
 	contentType = getValue("Content-Type", _headers);
 	std::cout << "Handling POST request for file: " << filePath << std::endl;
@@ -167,7 +167,7 @@ void	Client::handlePost(const std::string &endPath)
 	{
 		if (!writeMultipartFiles(body, boundary,
 			_location->GetPathUploadStore(), filePath))
-			return (badRequestRes());
+			return (ErrorResponce(400));
 		_resHeader = "HTTP/1.1 201 Created\r\n";
 		_resHeader += "Content-Length: 0\r\n";
 		_resHeader += "Connection: close\r\n\r\n";
@@ -177,12 +177,12 @@ void	Client::handlePost(const std::string &endPath)
 
 	file.open(filePath.c_str(), std::ios::binary | std::ios::trunc);
 	if (!file.is_open())
-		return (badRequestRes());
+		return (ErrorResponce(500));
 	if (_bodyLength > 0)
 		file.write(_request.data() + bodyStart, _bodyLength);
 	file.close();
 	if (file.fail())
-		return (badRequestRes());
+		return (ErrorResponce(500));
 
 	_resHeader = "HTTP/1.1 201 Created\r\n";
 	_resHeader += "Content-Length: 0\r\n";
@@ -200,7 +200,7 @@ void	Client::handleDelete(const std::string &endPath)
 	{
 		fileName = getUploadFileName(_requestLocation);
 		if (fileName.empty())
-			return (badRequestRes());
+			return (ErrorResponce(400));
 		filePath = _location->GetPathUploadStore();
 		if (filePath[filePath.length() - 1] != '/')
 			filePath += '/';
@@ -216,7 +216,7 @@ void	Client::handleDelete(const std::string &endPath)
 			_status = SENDING;
 			return ;
 		}
-		return (badRequestRes());
+		return (ErrorResponce(500));
 	}
 
 	_resHeader = "HTTP/1.1 204 No Content\r\n";

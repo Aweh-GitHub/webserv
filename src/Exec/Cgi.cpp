@@ -138,7 +138,7 @@ void Client::executeCGI(const std::string &scriptPath,
 
 	if (dot == std::string::npos)
 	{
-		badRequestRes();
+		ErrorResponce(500);
 		return ;
 	}
 
@@ -152,7 +152,7 @@ void Client::executeCGI(const std::string &scriptPath,
 
 	if (it == cgi.end())
 	{
-		badRequestRes();
+		ErrorResponce(500);
 		return ;
 	}
 
@@ -160,7 +160,7 @@ void Client::executeCGI(const std::string &scriptPath,
 
 	if (pipe(inPipe) == -1)
 	{
-		badRequestRes();
+		ErrorResponce(500);
 		return ;
 	}
 
@@ -168,7 +168,7 @@ void Client::executeCGI(const std::string &scriptPath,
 	{
 		close(inPipe[0]);
 		close(inPipe[1]);
-		badRequestRes();
+		ErrorResponce(500);
 		return ;
 	}
 
@@ -180,7 +180,7 @@ void Client::executeCGI(const std::string &scriptPath,
 		close(outPipe[0]);
 		close(outPipe[1]);
 
-		badRequestRes();
+		ErrorResponce(500);
 		return ;
 	}
 
@@ -272,7 +272,7 @@ void Client::executeCGI(const std::string &scriptPath,
 	{
 		close(outPipe[0]);
 		waitpid(pid, NULL, 0);
-		badRequestRes();
+		ErrorResponce(500);
 		return ;
 	}
 
@@ -311,7 +311,7 @@ void Client::readCGIOutput()
 				if (!parseCGIResponse(_cgiOutput))
 				{
 					_cgiRunning = false;
-					badRequestRes();
+					ErrorResponce(502);
 					return ;
 				}
 				break;
@@ -322,7 +322,7 @@ void Client::readCGIOutput()
 			close(_cgiFd);
 			_cgiFd = -1;
 			_cgiRunning = false;
-			badRequestRes();
+			ErrorResponce(500);
 			return ;
 		}
 	}
@@ -338,6 +338,6 @@ void Client::readCGIOutput()
 	{
 		_cgiPid = -1;
 		_cgiRunning = false;
-		badRequestRes();
+		ErrorResponce(500);
 	}
 }

@@ -52,7 +52,7 @@ bool	Client::setServerLocation()
 	const std::string	requestDomain = removePort(getValue("Host", _headers));
 	_serverOrigin = WebServ::_config.TryFindServer(_ip, _port, requestDomain);
 	if (_serverOrigin == NULL)
-		return (badRequestRes(), false);
+		return (ErrorResponce(400), false);
 	splitUrl(getValue("Location", _headers), _requestLocation, _requestUrlQuery);
 	if (!isSafeRequestPath(_requestLocation))
 	{
@@ -61,7 +61,7 @@ bool	Client::setServerLocation()
 	}
 	_location = _serverOrigin->TryFindLocation(_requestLocation);
 	if (_location == NULL)
-		return (badRequestRes(), false);
+		return (ErrorResponce(400), false);
 	return (true);
 }
 
@@ -90,14 +90,14 @@ ssize_t	Client::maxBodyLength()
 	// Invalid number
 	if (end == contentLengthStr.c_str() || *end != '\0')
 	{
-		badRequestRes();
+		ErrorResponce(400);
 		return (-1);
 	}
 
 	// Negative Content-Length
 	if (contentLength < 0)
 	{
-		badRequestRes();
+		ErrorResponce(400);
 		return (-1);
 	}
 	_bodyLength = contentLength;
@@ -128,7 +128,7 @@ void	Client::getRequest()
             return;
 		if (_headers.empty())
 			if (!parseHeader())
-				return (badRequestRes());
+				return (ErrorResponce(400));
 		if (!_serverOrigin && !_location)
 			if (!setServerLocation())
 				return;
@@ -146,7 +146,7 @@ void	Client::getRequest()
 
 		if (_bodyReceived > _bodyLength)
 		{
-			badRequestRes();
+			ErrorResponce(400);
 			return;
 		}
         // Complete request

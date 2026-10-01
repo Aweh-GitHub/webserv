@@ -344,7 +344,7 @@ void Client::build()
 			return ;
 		}
 
-		badRequestRes();
+		ErrorResponce(500);
 		_status = SENDING;
 		return ;
 	}
@@ -463,6 +463,6 @@ void Client::build()
 		return ;
 	}
 
-	badRequestRes();
+	ErrorResponce(500);
 	_status = SENDING;
 }
