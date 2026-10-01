@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/25 17:19:26 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/20 02:00:01 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/01 05:58:43 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,17 +42,6 @@ int	WebServ::newSocket(sa_family_t sFamily, in_port_t sPort, in_addr_t sAddr)
 	addToPoll(fd);
 	return (std::cout << "New socket (" << sPort << ")" << "created" << std::endl, fd);
 }
-/*
-AAction	*WebServ::newAction(int fd, Action type)
-{
-	AAction *action = NULL;
-
-	if (type == SOCKET)
-		action = new Socket(fd);
-	else
-		action = new Request(fd);
-	return (action);
-}*/
 
 int	WebServ::addToPoll(int fd)
 {

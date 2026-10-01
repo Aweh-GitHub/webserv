@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/26 00:36:24 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/01 04:36:06 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/01 05:52:10 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,12 +53,14 @@ int	main(int ac, char **av)
 
 			if (revents & (POLLIN | POLLOUT | POLLHUP))
 			{
+				#ifndef DEBUG
 				if (revents & POLLIN)
 					std::cout << "POLLIN event on fd: " << fd << std::endl;
 				if (revents & POLLOUT)
 					std::cout << "POLLOUT event on fd: " << fd << std::endl;
 				if (revents & POLLHUP)
 					std::cerr << RED << "POLLHUP event on fd: " << fd << RST << std::endl;
+				#endif
 				for (size_t j = 0; j < srv._A.size(); j++)
 				{
 					bool isClientFd = (fd == srv._A[j]->getFd());
@@ -75,7 +77,6 @@ int	main(int ac, char **av)
 						else if (isClientFd && srv.closeConnection() == fd)
 						{
 							srv._pollFds.erase(srv._pollFds.begin() + i);
-							std::cout << "Closing connection for fd: " << fd << std::endl;
 							delete srv._A[j];
 							srv._A.erase(srv._A.begin() + j);
 							srv._closeConnection = -1;
@@ -88,10 +89,12 @@ int	main(int ac, char **av)
 			}
 			else if (revents & (POLLERR | POLLNVAL))
 			{
+				#ifndef DEBUG
 				if (revents & POLLERR)
 					std::cerr << RED << "POLLERR event on fd: " << fd << RST << std::endl;
 				if (revents & POLLNVAL)
 					std::cerr << RED << "POLLNVAL event on fd: " << fd << RST << std::endl;
+				#endif
 				for (size_t j = 0; j < srv._A.size(); j++)
 				{
 					if (fd == srv._A[j]->getFd())

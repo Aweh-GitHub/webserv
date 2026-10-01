@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 01:52:12 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/01 04:17:22 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/01 05:50:12 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -60,7 +60,6 @@ bool	Client::setServerLocation()
     	return (false);
 	}
 	_location = _serverOrigin->TryFindLocation(_requestLocation);
-	//_location->Print();
 	if (_location == NULL)
 		return (badRequestRes(), false);
 	return (true);
@@ -73,7 +72,6 @@ ssize_t	Client::maxBodyLength()
 	long		contentLength;
 	ssize_t		maxBodySize;
 
-	// Location overrides server configuration
 	if (_location && _location->GetClientMaxBodySize() != 0)
 		maxBodySize = _location->GetClientMaxBodySize();
 	else
@@ -107,7 +105,7 @@ ssize_t	Client::maxBodyLength()
 	if (static_cast<size_t>(contentLength) > static_cast<size_t>(maxBodySize))
 	{
 		// 413 Payload Too Large, preferably
-		badRequestRes();
+		ErrorResponce(413);
 		return (-1);
 	}
 
@@ -163,16 +161,13 @@ void	Client::getRequest()
     }
     else if (n == 0)
     {
-        //close(_fd);
         WebServ::closeConnection() = _fd;
     }
 }
 
 void	Client::handleRequest()
 {
-	//_res = _request;
 	build();
-	//std::cout << _res << std::endl;
 	if (_cgiRunning)
 		updatePollEvent(_fd, 0);
 	else
@@ -206,7 +201,6 @@ void	Client::action()
 		sendResponce();
 	else if (_status == TERMINATED)
 	{
-		//close(_fd);
 		WebServ::_closeConnection = _fd;
 	}
 }
@@ -229,14 +223,7 @@ bool	Client::internalRedirection(std::string &location)
 		return (false);
 	std::cout << "Internal redirection to: " << path << std::endl;
 	if (!getFileContent(path, body))
-	{
-		// _resHeader += getHeader(404, "text/html", body.size());
-		// //getFileContent(err, body);
-		// _resBody += body;
 		return (false);
-	}
-	std::cout << "Internal redirection successful, file content loaded." << std::endl;
-	std::cout << body << std::endl;
 	_resHeader = getHeader(404, getMimeType(path), body.size());
 	_resBody = body;
 	_status = SENDING;

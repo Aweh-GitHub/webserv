@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/22 14:57:48 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/30 01:50:24 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/01 05:53:29 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -206,7 +206,6 @@ void	Client::handleDelete(const std::string &endPath)
 			filePath += '/';
 		filePath += fileName;
 	}
-	std::cout << "Deleting file: " << filePath << std::endl;
 	if (std::remove(filePath.c_str()) != 0)
 	{
 		if (errno == ENOENT)

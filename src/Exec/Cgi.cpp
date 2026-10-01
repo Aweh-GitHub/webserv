@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/25 01:04:09 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/01 05:01:55 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/01 05:55:02 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -116,8 +116,6 @@ bool Client::parseCGIResponse(const std::string &cgiOutput)
 			 << "\r\n";
 
 	response << "\r\n";
-
-	//response << _resBody;
 
 	_resHeader = response.str();
 
@@ -278,7 +276,6 @@ void Client::executeCGI(const std::string &scriptPath,
 		return ;
 	}
 
-	//_res.clear();
 	_cgiOutput.clear();
 	_cgiFd = outPipe[0];
 	WebServ::addToPoll(_cgiFd);
@@ -298,7 +295,9 @@ void Client::readCGIOutput()
 		while (true)
 		{
 			n = read(_cgiFd, buffer, sizeof(buffer));
+			#ifndef DEBUG
 			std::cout << "Read " << n << " bytes from CGI output." << std::endl;
+			#endif
 			if (n > 0)
 			{
 				_cgiOutput.append(buffer, n);
@@ -317,7 +316,7 @@ void Client::readCGIOutput()
 				}
 				break;
 			}
-			if (n < 0)
+			if (errno == EAGAIN || errno == EWOULDBLOCK)
 				break;
 
 			close(_cgiFd);

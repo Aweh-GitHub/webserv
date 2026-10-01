@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/04 08:05:16 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/30 08:36:49 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/01 05:50:37 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -52,7 +52,6 @@ std::string	Client::indexDir(std::string &path)
 	{
 		std::string name = ent->d_name;
 
-		// Don't expose the special directory entries.
 		if (name == "." || name == "..")
 			continue;
 
