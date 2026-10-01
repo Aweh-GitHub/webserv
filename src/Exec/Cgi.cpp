@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/25 01:04:09 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/01 04:24:12 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/01 05:01:55 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -306,10 +306,8 @@ void Client::readCGIOutput()
 			}
 			if (n == 0)
 			{
-				//close(_cgiFd);
-				updatePollEvent(_cgiFd, POLLOUT);
-				//WebServ::closeConnection() = _cgiFd;
-				//_cgiFd = -1;
+				close(_cgiFd);
+				_cgiFd = -1;
 				
 				if (!parseCGIResponse(_cgiOutput))
 				{
@@ -322,11 +320,10 @@ void Client::readCGIOutput()
 			if (n < 0)
 				break;
 
-			//close(_cgiFd);
-			//_cgiFd = -1;
+			close(_cgiFd);
+			_cgiFd = -1;
 			_cgiRunning = false;
 			badRequestRes();
-			//WebServ::closeConnection() = _cgiFd;
 			return ;
 		}
 	}
