@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/22 14:57:48 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/29 03:55:53 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/09/30 01:50:24 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -168,9 +168,9 @@ void	Client::handlePost(const std::string &endPath)
 		if (!writeMultipartFiles(body, boundary,
 			_location->GetPathUploadStore(), filePath))
 			return (badRequestRes());
-		_res = "HTTP/1.1 201 Created\r\n";
-		_res += "Content-Length: 0\r\n";
-		_res += "Connection: close\r\n\r\n";
+		_resHeader = "HTTP/1.1 201 Created\r\n";
+		_resHeader += "Content-Length: 0\r\n";
+		_resHeader += "Connection: close\r\n\r\n";
 		_status = SENDING;
 		return ;
 	}
@@ -184,9 +184,9 @@ void	Client::handlePost(const std::string &endPath)
 	if (file.fail())
 		return (badRequestRes());
 
-	_res = "HTTP/1.1 201 Created\r\n";
-	_res += "Content-Length: 0\r\n";
-	_res += "Connection: close\r\n\r\n";
+	_resHeader = "HTTP/1.1 201 Created\r\n";
+	_resHeader += "Content-Length: 0\r\n";
+	_resHeader += "Connection: close\r\n\r\n";
 	_status = SENDING;
 }
 
@@ -211,17 +211,17 @@ void	Client::handleDelete(const std::string &endPath)
 	{
 		if (errno == ENOENT)
 		{
-			_res = "HTTP/1.1 404 Not Found\r\n";
-			_res += "Content-Length: 0\r\n";
-			_res += "Connection: close\r\n\r\n";
+			_resHeader = "HTTP/1.1 404 Not Found\r\n";
+			_resHeader += "Content-Length: 0\r\n";
+			_resHeader += "Connection: close\r\n\r\n";
 			_status = SENDING;
 			return ;
 		}
 		return (badRequestRes());
 	}
 
-	_res = "HTTP/1.1 204 No Content\r\n";
-	_res += "Content-Length: 0\r\n";
-	_res += "Connection: close\r\n\r\n";
+	_resHeader = "HTTP/1.1 204 No Content\r\n";
+	_resHeader += "Content-Length: 0\r\n";
+	_resHeader += "Connection: close\r\n\r\n";
 	_status = SENDING;
 }

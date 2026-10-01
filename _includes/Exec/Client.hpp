@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 01:05:24 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/28 23:16:59 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/01 02:40:33 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -54,6 +54,7 @@ class Client : public AAction
 		void	notFoundRes(int errCode, std::map<size_t, std::string> errorPages);
 		std::string	getHeader(int code, std::string type, size_t length);
 		bool	handleGet(std::string &path);
+		bool	internalRedirection(std::string &location);
 		void	handlePost(const std::string &endPath);
 		void	handleDelete(const std::string &endPath);
 		bool	handleIndex(std::string &path);
@@ -83,6 +84,8 @@ class Client : public AAction
 		rStatus			_status;
 		std::string 	_request;
 		std::string		_res;
+		std::string		_resHeader;
+		std::string		_resBody;
 		ssize_t			_sBytes;
 		size_t			_endRequestHeader;
 		ssize_t			_startBodyHeader;
@@ -90,7 +93,8 @@ class Client : public AAction
 		ssize_t			_bodyLength;
 		ssize_t			_maxBodyLength;
 		bool			_cgiRunning;
-		int			_cgiFd;
+		bool			_resReady;
+		//int			_cgiFd;
 		pid_t		_cgiPid;
 		std::string	_cgiOutput;
 		static std::map<int, std::string> createRedirCode();

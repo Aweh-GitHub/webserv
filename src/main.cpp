@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: thantoni <thantoni@student.42.fr>          +#+  +:+       +#+        */
+/*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/26 00:36:24 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/10 14:38:36 by thantoni         ###   ########.fr       */
+/*   Updated: 2026/10/01 04:26:29 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,42 +45,86 @@ int	main(int ac, char **av)
 	while (srv._isRunning)
 	{
 		poll(srv._pollFds.data(), srv._pollFds.size(), -1);
-		for (size_t i = 0; i < srv._pollFds.size(); i++)
+		for (size_t i = 0; i < srv._pollFds.size(); )
 		{
-			if (srv._pollFds[i].revents & POLLIN)
+			const int fd = srv._pollFds[i].fd;
+			const short revents = srv._pollFds[i].revents;
+			bool removed = false;
+
+			if (revents & (POLLIN | POLLOUT))
 			{
+				if (revents & POLLIN)
+					std::cout << "POLLIN event on fd: " << fd << std::endl;
+				if (revents & POLLOUT)
+					std::cout << "POLLOUT event on fd: " << fd << std::endl;
 				for (size_t j = 0; j < srv._A.size(); j++)
 				{
-					if (srv._pollFds[i].fd == srv._A[j]->getFd())
+					if (fd == srv._A[j]->getFd() || fd == srv._A[j]->getCgiFd())
 					{
 						srv._A[j]->action();
-						if (srv.closeConnection() == srv._pollFds[i].fd)
+						if (srv.closeConnection() == fd)
 						{
-							delete srv._A[j];
+							
 							srv._pollFds.erase(srv._pollFds.begin() + i);
-							srv._A.erase(srv._A.begin() + j);
+							if (fd == srv._A[j]->getFd())
+							{
+								std::cout << "Closing connection for fd: " << fd << std::endl;
+								delete srv._A[j];
+								srv._A.erase(srv._A.begin() + j);
+							}
 							srv._closeConnection = -1;
+							close(fd);
+							removed = true;
 						}
+						break;
 					}
 				}
 			}
-			if (srv._pollFds[i].revents & POLLOUT)
+			else if (revents & (POLLERR | POLLNVAL))
 			{
+				if (revents & POLLERR)
+					std::cerr << RED << "POLLERR event on fd: " << fd << RST << std::endl;
+				if (revents & POLLNVAL)
+					std::cerr << RED << "POLLNVAL event on fd: " << fd << RST << std::endl;
 				for (size_t j = 0; j < srv._A.size(); j++)
 				{
-					if (srv._pollFds[i].fd == srv._A[j]->getFd())
+					if (fd == srv._A[j]->getFd())
 					{
-						srv._A[j]->action();
-						if (srv.closeConnection() == srv._pollFds[i].fd)
-						{
-							delete srv._A[j];
-							srv._pollFds.erase(srv._pollFds.begin() + i);
-							srv._A.erase(srv._A.begin() + j);
-							srv._closeConnection = -1;
-						}
+						delete srv._A[j];
+						srv._pollFds.erase(srv._pollFds.begin() + i);
+						srv._A.erase(srv._A.begin() + j);
+						removed = true;
+						break;
 					}
 				}
 			}
+			else if (revents & (POLLHUP))
+			{
+				if (revents & POLLHUP)
+					std::cerr << RED << "POLLHUP event on fd: " << fd << RST << std::endl;
+				for (size_t j = 0; j < srv._A.size(); j++)
+				{
+					std::cout << "stuck in POLLHUP for fd: " << fd << std::endl;
+					if (fd == srv._A[j]->getFd() || fd == srv._A[j]->getCgiFd())
+					{
+						if (fd == srv._A[j]->getFd())
+						{
+							std::cout << "Closing connection for fd: " << fd << std::endl;
+							delete srv._A[j];
+							srv._A.erase(srv._A.begin() + j);
+						}
+						close(fd);
+						//delete srv._A[j];
+						srv._pollFds.erase(srv._pollFds.begin() + i);
+						//srv._A.erase(srv._A.begin() + j);
+						removed = true;
+						std::cout << "HERE" << fd << std::endl;
+						break;
+					}
+				}
+			}
+			if (!removed)
+				++i;
 		}
 	}
 }

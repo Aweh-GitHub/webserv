@@ -6,11 +6,12 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/25 01:04:09 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/29 04:24:57 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/01 04:24:12 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Client.hpp"
+#include "WebServ.hpp"
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -41,14 +42,14 @@ bool Client::parseCGIResponse(const std::string &cgiOutput)
 {
 	std::string::size_type	headerEnd;
 	std::string				headers;
-	std::string				body;
+	//std::string				body;
 
 	headerEnd = cgiOutput.find("\r\n\r\n");
 
 	if (headerEnd != std::string::npos)
 	{
 		headers = cgiOutput.substr(0, headerEnd);
-		body = cgiOutput.substr(headerEnd + 4);
+		_resBody = cgiOutput.substr(headerEnd + 4);
 	}
 	else
 	{
@@ -58,7 +59,7 @@ bool Client::parseCGIResponse(const std::string &cgiOutput)
 			return (false);
 
 		headers = cgiOutput.substr(0, headerEnd);
-		body = cgiOutput.substr(headerEnd + 2);
+		_resBody = cgiOutput.substr(headerEnd + 2);
 	}
 
 	int statusCode = 200;
@@ -96,7 +97,7 @@ bool Client::parseCGIResponse(const std::string &cgiOutput)
 		}
 		else
 		{
-			_res += name + ": " + value + "\r\n";
+			_resHeader += name + ": " + value + "\r\n";
 		}
 	}
 
@@ -108,17 +109,17 @@ bool Client::parseCGIResponse(const std::string &cgiOutput)
 			 << statusText
 			 << "\r\n";
 
-	response << _res;
+	response << _resHeader;
 
 	response << "Content-Length: "
-			 << body.length()
+			 << _resBody.length()
 			 << "\r\n";
 
 	response << "\r\n";
 
-	response << body;
+	//response << _resBody;
 
-	_res = response.str();
+	_resHeader = response.str();
 
 	return (true);
 }
@@ -215,11 +216,9 @@ void Client::executeCGI(const std::string &scriptPath,
 		envStrings.push_back("SERVER_NAME=" + removePort(_headers["Host"]));
 		envStrings.push_back("REMOTE_ADDR=" + _ip);
 		envStrings.push_back("REDIRECT_STATUS=1");
-		std::cerr << _headers["Content-Length"] << " ?= " << _bodyLength << std::endl;
 		for (std::map<std::string, std::string>::const_iterator header =
 				_headers.begin(); header != _headers.end(); ++header)
 		{
-			//std::cerr << header->first << ": " << header->second << std::endl;
 			if (header->first == "Method" ||
 				header->first == "Location" ||
 				header->first == "Version" ||
@@ -230,10 +229,7 @@ void Client::executeCGI(const std::string &scriptPath,
 			envStrings.push_back(envName + "=" + header->second);
 		}
 		for (size_t i = 0; i < envStrings.size(); ++i)
-		{
-			//std::cerr << "Env: " << envStrings[i] << std::endl;
 			env.push_back(const_cast<char *>(envStrings[i].c_str()));
-		}
 		env.push_back(NULL);
 
 		char *argv[3];
@@ -282,9 +278,10 @@ void Client::executeCGI(const std::string &scriptPath,
 		return ;
 	}
 
-	_res.clear();
+	//_res.clear();
 	_cgiOutput.clear();
 	_cgiFd = outPipe[0];
+	WebServ::addToPoll(_cgiFd);
 	_cgiPid = pid;
 	_cgiRunning = true;
 }
@@ -301,6 +298,7 @@ void Client::readCGIOutput()
 		while (true)
 		{
 			n = read(_cgiFd, buffer, sizeof(buffer));
+			std::cout << "Read " << n << " bytes from CGI output." << std::endl;
 			if (n > 0)
 			{
 				_cgiOutput.append(buffer, n);
@@ -308,8 +306,11 @@ void Client::readCGIOutput()
 			}
 			if (n == 0)
 			{
-				close(_cgiFd);
-				_cgiFd = -1;
+				//close(_cgiFd);
+				updatePollEvent(_cgiFd, POLLOUT);
+				//WebServ::closeConnection() = _cgiFd;
+				//_cgiFd = -1;
+				
 				if (!parseCGIResponse(_cgiOutput))
 				{
 					_cgiRunning = false;
@@ -321,10 +322,11 @@ void Client::readCGIOutput()
 			if (n < 0)
 				break;
 
-			close(_cgiFd);
-			_cgiFd = -1;
+			//close(_cgiFd);
+			//_cgiFd = -1;
 			_cgiRunning = false;
 			badRequestRes();
+			//WebServ::closeConnection() = _cgiFd;
 			return ;
 		}
 	}

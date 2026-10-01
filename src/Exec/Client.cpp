@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 01:52:12 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/29 00:57:05 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/01 04:17:22 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,7 +21,8 @@ Client::Client(int fd, int port, std::string &ip) :
 	_ip(ip),
 	_serverOrigin(NULL),
 	_location(NULL),
-	_status(READING)
+	_status(READING),
+	_resReady(false)
 {
 	_fd = fd;
 	_sBytes = 0;
@@ -37,12 +38,12 @@ Client::Client(int fd, int port, std::string &ip) :
 
 Client::~Client() {}
 
-static void	updatePoll(int fd)
+void	updatePollEvent(int fd, short events)
 {
 	for ( unsigned long int i = 0; i < WebServ::_pollFds.size(); i++)
 	{
 		if (fd == WebServ::_pollFds[i].fd)
-			WebServ::_pollFds[i].events = POLLOUT;
+			WebServ::_pollFds[i].events = events;
 	}
 }
 
@@ -162,7 +163,7 @@ void	Client::getRequest()
     }
     else if (n == 0)
     {
-        close(_fd);
+        //close(_fd);
         WebServ::closeConnection() = _fd;
     }
 }
@@ -172,12 +173,20 @@ void	Client::handleRequest()
 	//_res = _request;
 	build();
 	//std::cout << _res << std::endl;
-	updatePoll(_fd);
+	if (_cgiRunning)
+		updatePollEvent(_fd, 0);
+	else
+		updatePollEvent(_fd, POLLOUT);
 }
 
 void	Client::sendResponce()
 {
 	//std::cout << _res << std::endl;
+	if ( _resReady == false )
+	{
+		_res = _resHeader + _resBody;
+		_resReady = true;
+	}
 	ssize_t n = send(_fd, _res.c_str() + _sBytes, _res.size() - _sBytes, 0);
 	if (n > 0)
 	{
@@ -197,7 +206,7 @@ void	Client::action()
 		sendResponce();
 	else if (_status == TERMINATED)
 	{
-		close(_fd);
+		//close(_fd);
 		WebServ::_closeConnection = _fd;
 	}
 }
@@ -205,6 +214,33 @@ void	Client::action()
 int	Client::getPort()
 {
 	return (_port);
+}
+
+bool	Client::internalRedirection(std::string &location)
+{
+	const Location	*targetLocation;
+	std::string		path;
+	std::string		body;
+
+	targetLocation = _serverOrigin->TryFindLocation(location);
+	if (targetLocation == NULL)
+		return (false);
+	if (resolvePath(targetLocation, location, _serverOrigin, path) != PATH_FILE)
+		return (false);
+	std::cout << "Internal redirection to: " << path << std::endl;
+	if (!getFileContent(path, body))
+	{
+		// _resHeader += getHeader(404, "text/html", body.size());
+		// //getFileContent(err, body);
+		// _resBody += body;
+		return (false);
+	}
+	std::cout << "Internal redirection successful, file content loaded." << std::endl;
+	std::cout << body << std::endl;
+	_resHeader = getHeader(404, getMimeType(path), body.size());
+	_resBody = body;
+	_status = SENDING;
+	return (true);
 }
 
 std::map<int, std::string> Client::createRedirCode()

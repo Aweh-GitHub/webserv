@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/26 00:39:55 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/29 00:56:23 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/01 04:12:25 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,3 +45,4 @@ std::string getMimeType(const std::string& path);
 void		splitUrl(const std::string &url, std::string &urlPath, std::string &urlQuery);
 std::string removePort(const std::string& host);
 bool		isSafeRequestPath(const std::string &path);
+void		updatePollEvent(int fd, short events);

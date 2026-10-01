@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/31 19:52:27 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/29 02:51:15 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/09/30 08:35:45 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -284,7 +284,7 @@ void Client::build()
 
 	if (_location->IsRedirection())
 	{
-		_res = redirect(_location->GetReturnCode(),
+		_resHeader = redirect(_location->GetReturnCode(),
 						_location->GetReturnPath());
 
 		_status = SENDING;
