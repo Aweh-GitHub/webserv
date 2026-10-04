@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 01:52:12 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/01 07:25:10 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/04 21:59:32 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -148,7 +148,7 @@ void	Client::getRequest()
 
 		if (_bodyReceived > _bodyLength)
 		{
-			ErrorResponce(400);
+			ErrorResponce(413);
 			return;
 		}
         // Complete request
@@ -179,7 +179,6 @@ void	Client::handleRequest()
 
 void	Client::sendResponce()
 {
-	//std::cout << _res << std::endl;
 	if ( _resReady == false )
 	{
 		_res = _resHeader + _resBody;
@@ -204,6 +203,10 @@ void	Client::action()
 		sendResponce();
 	else if (_status == TERMINATED)
 	{
+		std::cout << "Connection terminated for client: "<< std::endl;
+		std::cout << _request << std::endl;
+		std::cout << "Response sent: " << std::endl;
+		std::cout << _res << std::endl;
 		WebServ::_closeConnection = _fd;
 	}
 }

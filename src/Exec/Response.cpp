@@ -186,6 +186,54 @@ bool Client::resolveIndex(std::string &path)
 	return (false);
 }
 
+bool Client::resolveCGIPathInfo(const std::string &requestLocation,
+								std::string &scriptPath,
+								std::string &scriptName,
+								std::string &pathInfo)
+{
+	std::string	root;
+	std::string	relativeLocation;
+	std::string	candidate;
+	struct stat	st;
+	std::string::size_type slash;
+
+	root = _location->GetPathRoot();
+	if (root.empty())
+		root = _serverOrigin->GetPathRoot();
+	if (root.empty())
+		return (false);
+
+	relativeLocation = requestLocation;
+	if (_location->GetName() != "/" &&
+		requestLocation.compare(0, _location->GetName().length(),
+			_location->GetName()) == 0)
+		relativeLocation = requestLocation.substr(
+			_location->GetName().length());
+
+	slash = relativeLocation.find('/', 1);
+	while (slash != std::string::npos)
+	{
+		candidate = relativeLocation.substr(0, slash);
+		if (root[root.length() - 1] == '/' && candidate[0] == '/')
+			scriptPath = root + candidate.substr(1);
+		else if (root[root.length() - 1] != '/' && candidate[0] != '/')
+			scriptPath = root + "/" + candidate;
+		else
+			scriptPath = root + candidate;
+
+		if (stat(scriptPath.c_str(), &st) == 0 && S_ISREG(st.st_mode) &&
+			isCGI(scriptPath))
+		{
+			scriptName = requestLocation.substr(0,
+				requestLocation.length() - relativeLocation.length() + slash);
+			pathInfo = requestLocation.substr(scriptName.length());
+			return (true);
+		}
+		slash = relativeLocation.find('/', slash + 1);
+	}
+	return (false);
+}
+
 bool Client::isCGI(const std::string &path) const
 {
 	std::string::size_type	dot;
@@ -428,6 +476,12 @@ void Client::build()
 
 	if (pathType == PATH_NOT_FOUND)
 	{
+		if (resolveCGIPathInfo(_requestLocation, scriptPath,
+				scriptName, pathInfo))
+		{
+			executeCGI(scriptPath, scriptName, pathInfo);
+			return ;
+		}
 		if (resolveCGIIndex(
 				_requestLocation,
 				scriptPath,
@@ -435,7 +489,11 @@ void Client::build()
 		{
 			if (isCGI(scriptPath))
 			{
-				scriptName = "/" + std::string("index.php");
+				scriptName = _location->GetName();
+				if (scriptName == "/")
+					scriptName.clear();
+				scriptName += "/" + scriptPath.substr(
+					scriptPath.rfind('/') + 1);
 
 				executeCGI(
 					scriptPath,

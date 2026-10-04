@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/26 00:36:24 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/01 07:25:11 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/04 22:00:37 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,6 +42,14 @@ int	main(int ac, char **av)
 	signal(SIGINT, handleSignal);
 	if (!srv.init())
 		return (1);
+	// std::cout << "Current poll fds: ";
+	// 		for (size_t k = 0; k < srv._pollFds.size(); ++k)
+	// 		{
+	// 			std::cout << srv._pollFds[k].fd;
+	// 			if (k < srv._pollFds.size() - 1)
+	// 				std::cout << ", ";
+	// 		}
+	// 		std::cout << std::endl;
 	while (srv._isRunning)
 	{
 		poll(srv._pollFds.data(), srv._pollFds.size(), -1);
@@ -115,6 +123,14 @@ int	main(int ac, char **av)
 			}
 			if (!removed)
 				++i;
+			// std::cout << "Current poll fds: ";
+			// for (size_t k = 0; k < srv._pollFds.size(); ++k)
+			// {
+			// 	std::cout << srv._pollFds[k].fd;
+			// 	if (k < srv._pollFds.size() - 1)
+			// 		std::cout << ", ";
+			// }
+			// std::cout << std::endl;
 		}
 	}
 }

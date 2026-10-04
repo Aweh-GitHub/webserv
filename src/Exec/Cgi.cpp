@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/25 01:04:09 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/01 07:25:12 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/03 05:33:45 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -202,7 +202,11 @@ void Client::executeCGI(const std::string &scriptPath,
 		envStrings.push_back("REQUEST_METHOD=" + _headers["Method"]);
 		envStrings.push_back("SCRIPT_FILENAME=" + scriptPath);
 		envStrings.push_back("SCRIPT_NAME=" + scriptName);
-		envStrings.push_back("PATH_INFO=" + pathInfo);
+		if (!pathInfo.empty())
+			envStrings.push_back("PATH_INFO=" + pathInfo);
+		else
+			envStrings.push_back("PATH_INFO=/");
+		//envStrings.push_back("PATH_INFO=" + pathInfo);
 		envStrings.push_back("REQUEST_URI=" + _requestLocation);
 		envStrings.push_back("QUERY_STRING=" + _requestUrlQuery);
 		if (_headers.find("Content-Type") != _headers.end())
@@ -227,7 +231,10 @@ void Client::executeCGI(const std::string &scriptPath,
 			envStrings.push_back(envName + "=" + header->second);
 		}
 		for (size_t i = 0; i < envStrings.size(); ++i)
+		{
+			std::cerr << "Setting env: " << envStrings[i] << std::endl;
 			env.push_back(const_cast<char *>(envStrings[i].c_str()));
+		}
 		env.push_back(NULL);
 
 		char *argv[3];
@@ -308,7 +315,6 @@ void Client::readCGIOutput()
 	char	buffer[4096];
 	ssize_t	n;
 	int		status;
-	pid_t	waitResult;
 
 	if (_cgiFd != -1)
 	{
@@ -324,36 +330,30 @@ void Client::readCGIOutput()
 			_cgiFd = -1;
 			if (!parseCGIResponse(_cgiOutput))
 			{
+				waitpid(_cgiPid, NULL, 0);
+				_cgiPid = -1;
 				_cgiRunning = false;
 				ErrorResponce(502);
 				updatePollEvent(_fd, POLLOUT);
 				return ;
 			}
+			waitpid(_cgiPid, &status, 0);
+			_cgiPid = -1;
+			_cgiRunning = false;
+			_status = SENDING;
+			updatePollEvent(_fd, POLLOUT);
+			return ;
 		}
 		else
 		{
 			close(_cgiFd);
 			_cgiFd = -1;
+			waitpid(_cgiPid, NULL, 0);
+			_cgiPid = -1;
 			_cgiRunning = false;
 			ErrorResponce(500);
 			updatePollEvent(_fd, POLLOUT);
 			return ;
 		}
-	}
-
-	waitResult = waitpid(_cgiPid, &status, WNOHANG);
-	if (waitResult == _cgiPid)
-	{
-		_cgiPid = -1;
-		_cgiRunning = false;
-		_status = SENDING;
-		updatePollEvent(_fd, POLLOUT);
-	}
-	else if (waitResult == -1)
-	{
-		_cgiPid = -1;
-		_cgiRunning = false;
-		ErrorResponce(500);
-		updatePollEvent(_fd, POLLOUT);
 	}
 }

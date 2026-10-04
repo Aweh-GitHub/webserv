@@ -3,18 +3,19 @@
 /*                                                        :::      ::::::::   */
 /*   Location.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: thantoni <thantoni@student.42.fr>          +#+  +:+       +#+        */
+/*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/29 12:10:26 by thantoni          #+#    #+#             */
-/*   Updated: 2026/09/22 16:13:40 by thantoni         ###   ########.fr       */
+/*   Updated: 2026/10/04 22:11:29 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Location.hpp"
 #include "__internal__.hpp"
 #include <iostream>
+#include <limits>
 
-Location::Location() : _name(), _pathRoot(), _indexFiles(), _pathUploadStore(), _allowedMethods(), _clientMaxBodySize(1048576), _autoIndex(false), _redirectCode(0), _redirectPath()
+Location::Location() : _name(), _pathRoot(), _indexFiles(), _pathUploadStore(), _allowedMethods(), _clientMaxBodySize(std::numeric_limits<size_t>::max()), _autoIndex(false), _redirectCode(0), _redirectPath()
 {
 
 }

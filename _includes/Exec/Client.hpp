@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 01:05:24 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/01 07:25:16 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/03 04:18:11 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,6 +65,10 @@ class Client : public AAction
 			const Server *server,
 			std::string &path);
 		bool	resolveIndex(std::string &path);
+		bool	resolveCGIPathInfo(const std::string &requestLocation,
+								std::string &scriptPath,
+								std::string &scriptName,
+								std::string &pathInfo);
 		bool	resolveCGIIndex(const std::string &requestLocation,
 							 std::string &scriptPath,
 							 std::string &pathInfo);
