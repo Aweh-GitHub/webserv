@@ -6,13 +6,15 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 01:52:12 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/04 21:59:32 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/05 04:39:43 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Client.hpp"
 #include "WebServ.hpp"
+#include <cctype>
 #include <cstdlib>
+#include <limits>
 
 const std::map<int, std::string> Client::_redirCode = Client::createRedirCode();
 
@@ -67,51 +69,66 @@ bool	Client::setServerLocation()
 	return (true);
 }
 
-ssize_t	Client::maxBodyLength()
+bool	Client::maxBodyLength()
 {
+	std::map<std::string, std::string>::const_iterator contentLengthHeader;
 	std::string	contentLengthStr;
-	char		*end;
-	long		contentLength;
-	ssize_t		maxBodySize;
+	size_t		contentLength;
+	size_t		first;
+	size_t		last;
 
-	if (_location && _location->GetClientMaxBodySize() != 0)
-		maxBodySize = _location->GetClientMaxBodySize();
+	if (_location && _location->GetMaxBodySizeSet())
+		_maxBodyLength = _location->GetClientMaxBodySize();
 	else
-		maxBodySize = _serverOrigin->GetClientMaxBodySize();
+		_maxBodyLength = _serverOrigin->GetClientMaxBodySize();
 
-	contentLengthStr = getValue("Content-Length", _headers);
-
-	// No Content-Length -> no declared body size
-	if (contentLengthStr.empty())
-		return (maxBodySize);
-
-	// Parse Content-Length
-	end = NULL;
-	contentLength = std::strtol(contentLengthStr.c_str(), &end, 10);
-
-	// Invalid number
-	if (end == contentLengthStr.c_str() || *end != '\0')
+	contentLengthHeader = _headers.find("Content-Length");
+	if (contentLengthHeader == _headers.end())
+		return (true);
+	contentLengthStr = contentLengthHeader->second;
+	first = 0;
+	last = contentLengthStr.length();
+	while (last > first && (contentLengthStr[last - 1] == ' ' ||
+		contentLengthStr[last - 1] == '\t'))
+		--last;
+	if (first == last)
 	{
 		ErrorResponce(400);
-		return (-1);
+		return (false);
+	}
+	contentLengthStr = contentLengthStr.substr(first, last - first);
+
+	contentLength = 0;
+	for (size_t i = 0; i < contentLengthStr.length(); ++i)
+	{
+		unsigned char digit;
+
+		if (!std::isdigit(static_cast<unsigned char>(contentLengthStr[i])))
+		{
+			ErrorResponce(400);
+			return (false);
+		}
+		digit = static_cast<unsigned char>(contentLengthStr[i] - '0');
+		if (contentLength >
+			(std::numeric_limits<size_t>::max() - digit) / 10)
+		{
+			ErrorResponce(413);
+			return (false);
+		}
+		contentLength = contentLength * 10 + digit;
 	}
 
-	// Negative Content-Length
-	if (contentLength < 0)
-	{
-		ErrorResponce(400);
-		return (-1);
-	}
-	_bodyLength = contentLength;
 	// Declared body is larger than configuration
-	if (static_cast<size_t>(contentLength) > static_cast<size_t>(maxBodySize))
+	if (contentLength > _maxBodyLength)
 	{
 		// 413 Payload Too Large, preferably
 		ErrorResponce(413);
-		return (-1);
+		return (false);
 	}
 
-	return (maxBodySize);
+	_bodyLength = contentLength;
+
+	return (true);
 }
 
 void	Client::getRequest()
@@ -136,16 +153,10 @@ void	Client::getRequest()
 				return;
         _startBodyHeader = _endRequestHeader + 4;
 
-		_maxBodyLength = maxBodyLength();
-
-		if (_maxBodyLength < 0)
-		{
-            _status = WRITING;
+		if (!maxBodyLength())
             return;
-        }
 
 		_bodyReceived = _request.size() - _startBodyHeader;
-
 		if (_bodyReceived > _bodyLength)
 		{
 			ErrorResponce(413);

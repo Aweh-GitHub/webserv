@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/26 00:36:24 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/04 22:00:37 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/05 02:41:29 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 #include "WebServ.hpp"
 #include "Colors.hpp"
 #include "ConfigBuilder.hpp"
+#include <limits>
 
 void handleSignal(int sig)
 {

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Location.hpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: thantoni <thantoni@student.42.fr>          +#+  +:+       +#+        */
+/*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/29 12:08:54 by thantoni          #+#    #+#             */
-/*   Updated: 2026/09/22 16:13:35 by thantoni         ###   ########.fr       */
+/*   Updated: 2026/10/05 02:40:16 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,6 +34,7 @@ class Location
 		const std::set<std::string>&				GetAllowedMethods() const;
 		const std::map<std::string, std::string>&	GetCGIExtensions() const;
 		size_t										GetClientMaxBodySize() const;
+		bool										GetMaxBodySizeSet() const;
 		bool										GetAutoIndex() const;
 		size_t										GetReturnCode() const;
 		const std::string							GetReturnPath() const;
@@ -59,6 +60,7 @@ class Location
 		std::set<std::string>				_allowedMethods;
 		std::map<std::string, std::string>	_cgiExtensions; //std::map<"extension", "path_exec">
 		size_t								_clientMaxBodySize;
+		bool								_maxBodySizeSet;
 		bool								_autoIndex;
 		
 		// RETURN LOCATION

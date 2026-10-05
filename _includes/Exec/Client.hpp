@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 01:05:24 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/03 04:18:11 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/05 04:05:37 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -57,7 +57,7 @@ class Client : public AAction
 
 		// Routing, locations, and filesystem path resolution.
 		bool	setServerLocation();
-		ssize_t	maxBodyLength();
+		bool	maxBodyLength();
 		bool	internalRedirection(std::string &location);
 		bool	isCGI(const std::string &path) const;
 		PathType	resolvePath(const Location *location, 
@@ -103,10 +103,10 @@ class Client : public AAction
 		std::string		_resBody;
 		ssize_t			_sBytes;
 		size_t			_endRequestHeader;
-		ssize_t			_startBodyHeader;
-		ssize_t			_bodyReceived;
-		ssize_t			_bodyLength;
-		ssize_t			_maxBodyLength;
+		size_t			_startBodyHeader;
+		size_t			_bodyReceived;
+		size_t			_bodyLength;
+		size_t			_maxBodyLength;
 		bool			_cgiRunning;
 		bool			_resReady;
 		int			_cgiInputFd;
