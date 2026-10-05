@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 01:05:24 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/01 06:16:30 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/05 08:20:46 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,6 +39,9 @@ class Client : public AAction
 		Client(int fd, int port, std::string &ip);
 		~Client();
 		void	action();
+		void	action(int fd, short revents);
+		bool	checkTimeout(bool pollTimedOut);
+		int		getCgiInputFd();
 		void	build();
 		int		getPort();
 	private:
@@ -55,14 +58,18 @@ class Client : public AAction
 
 		// Routing, locations, and filesystem path resolution.
 		bool	setServerLocation();
-		ssize_t	maxBodyLength();
-		bool	internalRedirection(std::string &location);
+		bool	maxBodyLength();
+		bool	internalRedirection(std::string &location, int error);
 		bool	isCGI(const std::string &path) const;
 		PathType	resolvePath(const Location *location, 
 			const std::string &requestLocation,
 			const Server *server,
 			std::string &path);
 		bool	resolveIndex(std::string &path);
+		bool	resolveCGIPathInfo(const std::string &requestLocation,
+								std::string &scriptPath,
+								std::string &scriptName,
+								std::string &pathInfo);
 		bool	resolveCGIIndex(const std::string &requestLocation,
 							 std::string &scriptPath,
 							 std::string &pathInfo);
@@ -71,6 +78,7 @@ class Client : public AAction
 		void	executeCGI(const std::string &scriptPath,
 						const std::string &scriptName,
 						const std::string &pathInfo);
+		void	writeCGIInput();
 		void	readCGIOutput();
 		bool	parseCGIResponse(const std::string &cgiOutput);
 
@@ -96,13 +104,17 @@ class Client : public AAction
 		std::string		_resBody;
 		ssize_t			_sBytes;
 		size_t			_endRequestHeader;
-		ssize_t			_startBodyHeader;
-		ssize_t			_bodyReceived;
-		ssize_t			_bodyLength;
-		ssize_t			_maxBodyLength;
+		size_t			_startBodyHeader;
+		size_t			_bodyReceived;
+		size_t			_bodyLength;
+		size_t			_maxBodyLength;
 		bool			_cgiRunning;
 		bool			_resReady;
+		int			_cgiInputFd;
+			size_t		_cgiInputOffset;
 		pid_t			_cgiPid;
+			size_t			_cgiPollTicks;
+			size_t			_idlePollTicks;
 		std::string		_cgiOutput;
 
 		// Redirect and index response helpers.

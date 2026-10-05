@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/26 00:36:24 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/01 05:52:10 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/05 09:01:27 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 #include "WebServ.hpp"
 #include "Colors.hpp"
 #include "ConfigBuilder.hpp"
+#include <limits>
 
 void handleSignal(int sig)
 {
@@ -40,11 +41,29 @@ int	main(int ac, char **av)
 		std::cerr << RED << e.what() << RST << '\n';
 	}
 	signal(SIGINT, handleSignal);
+	signal(SIGPIPE, SIG_IGN);
 	if (!srv.init())
 		return (1);
 	while (srv._isRunning)
 	{
-		poll(srv._pollFds.data(), srv._pollFds.size(), -1);
+		int pollResult = poll(srv._pollFds.data(), srv._pollFds.size(), 1000);
+		bool pollTimedOut = (pollResult == 0);
+		for (size_t j = 0; j < srv._A.size(); ++j)
+		{
+			int cgiFd = srv._A[j]->getCgiFd();
+			int cgiInputFd = srv._A[j]->getCgiInputFd();
+
+			if (!srv._A[j]->checkTimeout(pollTimedOut))
+				continue;
+			for (size_t k = 0; k < srv._pollFds.size(); )
+			{
+				if (srv._pollFds[k].fd == cgiFd ||
+					srv._pollFds[k].fd == cgiInputFd)
+					srv._pollFds.erase(srv._pollFds.begin() + k);
+				else
+					++k;
+			}
+		}
 		for (size_t i = 0; i < srv._pollFds.size(); )
 		{
 			const int fd = srv._pollFds[i].fd;
@@ -65,11 +84,17 @@ int	main(int ac, char **av)
 				{
 					bool isClientFd = (fd == srv._A[j]->getFd());
 					bool isCgiFd = (fd == srv._A[j]->getCgiFd());
+					bool isCgiInputFd = (fd == srv._A[j]->getCgiInputFd());
 
-					if (isClientFd || isCgiFd)
+					if (isClientFd || isCgiFd || isCgiInputFd)
 					{
-						srv._A[j]->action();
+						srv._A[j]->action(fd, revents);
 						if (isCgiFd && srv._A[j]->getCgiFd() == -1)
+						{
+							srv._pollFds.erase(srv._pollFds.begin() + i);
+							removed = true;
+						}
+						else if (isCgiInputFd && srv._A[j]->getCgiInputFd() == -1)
 						{
 							srv._pollFds.erase(srv._pollFds.begin() + i);
 							removed = true;
@@ -97,11 +122,22 @@ int	main(int ac, char **av)
 				#endif
 				for (size_t j = 0; j < srv._A.size(); j++)
 				{
+					bool isCgiFd = (fd == srv._A[j]->getCgiFd());
+					bool isCgiInputFd = (fd == srv._A[j]->getCgiInputFd());
+
+					if (isCgiFd || isCgiInputFd)
+					{
+						srv._A[j]->action(fd, revents);
+						srv._pollFds.erase(srv._pollFds.begin() + i);
+						removed = true;
+						break;
+					}
 					if (fd == srv._A[j]->getFd())
 					{
 						delete srv._A[j];
 						srv._pollFds.erase(srv._pollFds.begin() + i);
 						srv._A.erase(srv._A.begin() + j);
+						close(fd);
 						removed = true;
 						break;
 					}

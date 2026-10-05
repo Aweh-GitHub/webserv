@@ -14,6 +14,16 @@
 #include "WebServ.hpp"
 #include "Client.hpp"
 
+static bool setCloseOnExec(int fd)
+{
+	int flags;
+
+	flags = fcntl(fd, F_GETFD);
+	if (flags == -1)
+		return (false);
+	return (fcntl(fd, F_SETFD, flags | FD_CLOEXEC) != -1);
+}
+
 Socket::Socket(int fd, size_t port, const std::string &ip) : _port(port), _ip(ip)
 {
 	_fd = fd;
@@ -31,6 +41,11 @@ void	Socket::action()
 	if (cfd == -1)
 	{
 		std::cerr << "Error Accept" << std::endl;
+		return ;
+	}
+	if (!setCloseOnExec(cfd))
+	{
+		close(cfd);
 		return ;
 	}
 	fcntl(cfd, F_SETFL, O_NONBLOCK);

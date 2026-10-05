@@ -3,18 +3,19 @@
 /*                                                        :::      ::::::::   */
 /*   Location.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: thantoni <thantoni@student.42.fr>          +#+  +:+       +#+        */
+/*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/29 12:10:26 by thantoni          #+#    #+#             */
-/*   Updated: 2026/09/22 16:13:40 by thantoni         ###   ########.fr       */
+/*   Updated: 2026/10/05 02:40:31 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Location.hpp"
 #include "__internal__.hpp"
 #include <iostream>
+#include <limits>
 
-Location::Location() : _name(), _pathRoot(), _indexFiles(), _pathUploadStore(), _allowedMethods(), _clientMaxBodySize(1048576), _autoIndex(false), _redirectCode(0), _redirectPath()
+Location::Location() : _name(), _pathRoot(), _indexFiles(), _pathUploadStore(), _allowedMethods(), _clientMaxBodySize(0), _maxBodySizeSet(false), _autoIndex(false), _redirectCode(0), _redirectPath()
 {
 
 }
@@ -68,7 +69,7 @@ void	Location::SetPathRoot(const std::string pathRoot) { this->_pathRoot = pathR
 void	Location::SetIndexFiles(const std::vector<std::string> indexFiles) { this->_indexFiles = indexFiles; }
 void	Location::SetPathUploadStore(const std::string pathUploadStore) { this->_pathUploadStore = pathUploadStore; }
 void	Location::SetAllowedMethods(const std::set<std::string> allowedMethods) { this->_allowedMethods = allowedMethods; }
-void	Location::SetClientMaxBodySize(const size_t clientMaxBodySize) { this->_clientMaxBodySize = clientMaxBodySize; }
+void	Location::SetClientMaxBodySize(const size_t clientMaxBodySize) { this->_clientMaxBodySize = clientMaxBodySize; this->_maxBodySizeSet = true; }
 void	Location::SetAutoIndex(const bool autoIndex) { this->_autoIndex = autoIndex; }
 void	Location::SetRedirectCode(const size_t redirectCode) { this->_redirectCode = redirectCode; }
 void	Location::SetRedirectPath(const std::string redirectPath) { this->_redirectPath = redirectPath; }
@@ -82,3 +83,4 @@ void	Location::AddCGIExtension(const std::string ext, const std::string exec_pat
 }
 
 bool	Location::IsRedirection() const { return (this->_redirectCode != 0); }
+bool	Location::GetMaxBodySizeSet() const { return (this->_maxBodySizeSet); }

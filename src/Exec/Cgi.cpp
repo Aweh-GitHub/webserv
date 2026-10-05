@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/25 01:04:09 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/01 05:55:02 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/05 08:28:14 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,6 +22,18 @@
 #include <cctype>
 #include <iostream>
 #include <sstream>
+
+static const size_t CGI_TIMEOUT_TICKS = 10;
+
+static bool setCloseOnExec(int fd)
+{
+	int flags;
+
+	flags = fcntl(fd, F_GETFD);
+	if (flags == -1)
+		return (false);
+	return (fcntl(fd, F_SETFD, flags | FD_CLOEXEC) != -1);
+}
 
 static std::string makeCGIHeaderName(const std::string &headerName)
 {
@@ -131,8 +143,11 @@ void Client::executeCGI(const std::string &scriptPath,
 	pid_t	pid;
 
 	std::string::size_type	dot;
+	std::string::size_type	slash;
 	std::string				extension;
 	std::string				executable;
+	std::string				scriptDirectory;
+	std::string				scriptFile;
 
 	dot = scriptPath.rfind('.');
 
@@ -163,11 +178,27 @@ void Client::executeCGI(const std::string &scriptPath,
 		ErrorResponce(500);
 		return ;
 	}
+	if (!setCloseOnExec(inPipe[0]) || !setCloseOnExec(inPipe[1]))
+	{
+		close(inPipe[0]);
+		close(inPipe[1]);
+		ErrorResponce(500);
+		return ;
+	}
 
 	if (pipe(outPipe) == -1)
 	{
 		close(inPipe[0]);
 		close(inPipe[1]);
+		ErrorResponce(500);
+		return ;
+	}
+	if (!setCloseOnExec(outPipe[0]) || !setCloseOnExec(outPipe[1]))
+	{
+		close(inPipe[0]);
+		close(inPipe[1]);
+		close(outPipe[0]);
+		close(outPipe[1]);
 		ErrorResponce(500);
 		return ;
 	}
@@ -186,6 +217,19 @@ void Client::executeCGI(const std::string &scriptPath,
 
 	if (pid == 0)
 	{
+		slash = scriptPath.rfind('/');
+		scriptDirectory = ".";
+		scriptFile = scriptPath;
+		if (slash != std::string::npos)
+		{
+			if (slash == 0)
+				scriptDirectory = "/";
+			else
+				scriptDirectory = scriptPath.substr(0, slash);
+			scriptFile = scriptPath.substr(slash + 1);
+		}
+		if (chdir(scriptDirectory.c_str()) == -1)
+			_exit(1);
 		dup2(inPipe[0], STDIN_FILENO);
 		dup2(outPipe[1], STDOUT_FILENO);
 
@@ -200,9 +244,13 @@ void Client::executeCGI(const std::string &scriptPath,
 
 		envStrings.push_back("GATEWAY_INTERFACE=CGI/1.1");
 		envStrings.push_back("REQUEST_METHOD=" + _headers["Method"]);
-		envStrings.push_back("SCRIPT_FILENAME=" + scriptPath);
+		envStrings.push_back("SCRIPT_FILENAME=" + scriptFile);
 		envStrings.push_back("SCRIPT_NAME=" + scriptName);
-		envStrings.push_back("PATH_INFO=" + pathInfo);
+		if (!pathInfo.empty())
+			envStrings.push_back("PATH_INFO=" + pathInfo);
+		else
+			envStrings.push_back("PATH_INFO=/");
+		//envStrings.push_back("PATH_INFO=" + pathInfo);
 		envStrings.push_back("REQUEST_URI=" + _requestLocation);
 		envStrings.push_back("QUERY_STRING=" + _requestUrlQuery);
 		if (_headers.find("Content-Type") != _headers.end())
@@ -227,13 +275,16 @@ void Client::executeCGI(const std::string &scriptPath,
 			envStrings.push_back(envName + "=" + header->second);
 		}
 		for (size_t i = 0; i < envStrings.size(); ++i)
+		{
+			std::cerr << "Setting env: " << envStrings[i] << std::endl;
 			env.push_back(const_cast<char *>(envStrings[i].c_str()));
+		}
 		env.push_back(NULL);
 
 		char *argv[3];
 
 		argv[0] = const_cast<char *>(executable.c_str());
-		argv[1] = const_cast<char *>(scriptPath.c_str());
+		argv[1] = const_cast<char *>(scriptFile.c_str());
 		argv[2] = NULL;
 
 		execve(executable.c_str(), argv, &env[0]);
@@ -243,101 +294,149 @@ void Client::executeCGI(const std::string &scriptPath,
 
 	close(inPipe[0]);
 	close(outPipe[1]);
-
-	if (_headers["Method"] == "POST" ||
-		_headers["Method"] == "PUT")
+	if (fcntl(inPipe[1], F_SETFL, O_NONBLOCK) == -1 ||
+		fcntl(outPipe[0], F_SETFL, O_NONBLOCK) == -1)
 	{
-		if (_bodyLength > 0)
-		{
-			size_t total = _startBodyHeader;
-
-   			while (total < _request.size())
-    		{
-        		ssize_t n = write(inPipe[1],
-             	       	_request.data() + total,
-                        _request.size() - total);
-
-        		if (n <= 0)
-        		{
-        		    break;
-        		}
-        		total += static_cast<size_t>(n);
-			}
-		}
-	}
-
-	close(inPipe[1]);
-
-	if (fcntl(outPipe[0], F_SETFL, O_NONBLOCK) == -1)
-	{
+		close(inPipe[1]);
 		close(outPipe[0]);
+		kill(pid, SIGKILL);
 		waitpid(pid, NULL, 0);
 		ErrorResponce(500);
 		return ;
 	}
 
 	_cgiOutput.clear();
+	_cgiPid = pid;
+	_cgiPollTicks = 0;
+	_cgiRunning = true;
 	_cgiFd = outPipe[0];
 	WebServ::addToPoll(_cgiFd);
-	_cgiPid = pid;
-	_cgiRunning = true;
+	if ((_headers["Method"] == "POST" ||
+		_headers["Method"] == "PUT") && _bodyLength > 0)
+	{
+		_cgiInputFd = inPipe[1];
+		_cgiInputOffset = _startBodyHeader;
+		WebServ::addToPoll(_cgiInputFd);
+		updatePollEvent(_cgiInputFd, POLLOUT);
+	}
+	else
+	{
+		close(inPipe[1]);
+	}
+}
+
+bool Client::checkTimeout(bool pollTimedOut)
+{
+	if (!_cgiRunning && _cgiPid != -1)
+	{
+		if (waitpid(_cgiPid, NULL, WNOHANG) > 0)
+			_cgiPid = -1;
+		return (false);
+	}
+	if (_cgiRunning)
+	{
+		if (!pollTimedOut)
+			return (false);
+		++_cgiPollTicks;
+		if (_cgiPollTicks < CGI_TIMEOUT_TICKS)
+			return (false);
+		if (_cgiInputFd != -1)
+		{
+			close(_cgiInputFd);
+			_cgiInputFd = -1;
+		}
+		if (_cgiFd != -1)
+		{
+			close(_cgiFd);
+			_cgiFd = -1;
+		}
+		kill(_cgiPid, SIGKILL);
+		waitpid(_cgiPid, NULL, 0);
+		_cgiPid = -1;
+		_cgiRunning = false;
+		ErrorResponce(504);
+		updatePollEvent(_fd, POLLOUT);
+		return (true);
+	}
+	if (_status != READING || !pollTimedOut)
+		return (false);
+	++_idlePollTicks;
+	if (_idlePollTicks < CGI_TIMEOUT_TICKS)
+		return (false);
+	ErrorResponce(408);
+	updatePollEvent(_fd, POLLOUT);
+	return (true);
+}
+
+void Client::writeCGIInput()
+{
+	ssize_t n;
+
+	if (_cgiInputFd == -1)
+		return ;
+	n = write(_cgiInputFd, _request.data() + _cgiInputOffset,
+		_request.size() - _cgiInputOffset);
+	if (n > 0)
+	{
+		_cgiInputOffset += static_cast<size_t>(n);
+		if (_cgiInputOffset == _request.size())
+		{
+			close(_cgiInputFd);
+			_cgiInputFd = -1;
+		}
+	}
+	else if (n < 0)
+	{
+		close(_cgiInputFd);
+		_cgiInputFd = -1;
+		kill(_cgiPid, SIGKILL);
+		waitpid(_cgiPid, NULL, 0);
+		_cgiPid = -1;
+		_cgiRunning = false;
+		ErrorResponce(500);
+		updatePollEvent(_fd, POLLOUT);
+	}
 }
 
 void Client::readCGIOutput()
 {
 	char	buffer[4096];
 	ssize_t	n;
-	int		status;
-	pid_t	waitResult;
 
 	if (_cgiFd != -1)
 	{
-		while (true)
+		n = read(_cgiFd, buffer, sizeof(buffer));
+		#ifndef DEBUG
+		std::cout << "Read " << n << " bytes from CGI output." << std::endl;
+		#endif
+		if (n > 0)
+			_cgiOutput.append(buffer, n);
+		else if (n == 0)
 		{
-			n = read(_cgiFd, buffer, sizeof(buffer));
-			#ifndef DEBUG
-			std::cout << "Read " << n << " bytes from CGI output." << std::endl;
-			#endif
-			if (n > 0)
-			{
-				_cgiOutput.append(buffer, n);
-				continue;
-			}
-			if (n == 0)
-			{
-				close(_cgiFd);
-				_cgiFd = -1;
-				
-				if (!parseCGIResponse(_cgiOutput))
-				{
-					_cgiRunning = false;
-					ErrorResponce(502);
-					return ;
-				}
-				break;
-			}
-			if (errno == EAGAIN || errno == EWOULDBLOCK)
-				break;
-
 			close(_cgiFd);
 			_cgiFd = -1;
+			if (!parseCGIResponse(_cgiOutput))
+			{
+				_cgiRunning = false;
+				ErrorResponce(502);
+				updatePollEvent(_fd, POLLOUT);
+				return ;
+			}
 			_cgiRunning = false;
-			ErrorResponce(500);
+			_status = SENDING;
+			updatePollEvent(_fd, POLLOUT);
 			return ;
 		}
-	}
-
-	waitResult = waitpid(_cgiPid, &status, WNOHANG);
-	if (waitResult == _cgiPid)
-	{
-		_cgiPid = -1;
-		_cgiRunning = false;
-		_status = SENDING;
-	}
-	else if (waitResult == -1)
-	{
-		_cgiPid = -1;
-		_cgiRunning = false;
-		ErrorResponce(500);
+		else
+		{
+			close(_cgiFd);
+			_cgiFd = -1;
+			waitpid(_cgiPid, NULL, 0);
+			_cgiPid = -1;
+			_cgiRunning = false;
+			ErrorResponce(500);
+			updatePollEvent(_fd, POLLOUT);
+			return ;
+		}
 	}
 }

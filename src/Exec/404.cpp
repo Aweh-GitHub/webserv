@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/18 02:20:46 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/01 05:56:07 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/05 08:20:50 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,7 +27,7 @@ void	Client::ErrorResponce(int error)
 		it != _serverOrigin->GetErrorPages().end())
 		{
 			path = it->second;
-			if(!internalRedirection(path))
+			if(!internalRedirection(path, error))
 			{
 				std::ostringstream defaultPage;
 				defaultPage << "./template/" << error << ".html";

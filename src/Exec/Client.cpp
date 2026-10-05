@@ -6,13 +6,15 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 01:52:12 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/01 05:50:12 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/05 08:33:49 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Client.hpp"
 #include "WebServ.hpp"
+#include <cctype>
 #include <cstdlib>
+#include <limits>
 
 const std::map<int, std::string> Client::_redirCode = Client::createRedirCode();
 
@@ -32,11 +34,26 @@ Client::Client(int fd, int port, std::string &ip) :
 	_startBodyHeader = 0;
 	_status = READING;
 	_cgiRunning = false;
+	_cgiInputFd = -1;
+	_cgiInputOffset = 0;
 	_cgiFd = -1;
 	_cgiPid = -1;
+	_cgiPollTicks = 0;
+	_idlePollTicks = 0;
 }
 
-Client::~Client() {}
+Client::~Client()
+{
+	if (_cgiInputFd != -1)
+		close(_cgiInputFd);
+	if (_cgiFd != -1)
+		close(_cgiFd);
+	if (_cgiPid != -1)
+	{
+		kill(_cgiPid, SIGKILL);
+		waitpid(_cgiPid, NULL, 0);
+	}
+}
 
 void	updatePollEvent(int fd, short events)
 {
@@ -65,51 +82,66 @@ bool	Client::setServerLocation()
 	return (true);
 }
 
-ssize_t	Client::maxBodyLength()
+bool	Client::maxBodyLength()
 {
+	std::map<std::string, std::string>::const_iterator contentLengthHeader;
 	std::string	contentLengthStr;
-	char		*end;
-	long		contentLength;
-	ssize_t		maxBodySize;
+	size_t		contentLength;
+	size_t		first;
+	size_t		last;
 
-	if (_location && _location->GetClientMaxBodySize() != 0)
-		maxBodySize = _location->GetClientMaxBodySize();
+	if (_location && _location->GetMaxBodySizeSet())
+		_maxBodyLength = _location->GetClientMaxBodySize();
 	else
-		maxBodySize = _serverOrigin->GetClientMaxBodySize();
+		_maxBodyLength = _serverOrigin->GetClientMaxBodySize();
 
-	contentLengthStr = getValue("Content-Length", _headers);
-
-	// No Content-Length -> no declared body size
-	if (contentLengthStr.empty())
-		return (maxBodySize);
-
-	// Parse Content-Length
-	end = NULL;
-	contentLength = std::strtol(contentLengthStr.c_str(), &end, 10);
-
-	// Invalid number
-	if (end == contentLengthStr.c_str() || *end != '\0')
+	contentLengthHeader = _headers.find("Content-Length");
+	if (contentLengthHeader == _headers.end())
+		return (true);
+	contentLengthStr = contentLengthHeader->second;
+	first = 0;
+	last = contentLengthStr.length();
+	while (last > first && (contentLengthStr[last - 1] == ' ' ||
+		contentLengthStr[last - 1] == '\t'))
+		--last;
+	if (first == last)
 	{
 		ErrorResponce(400);
-		return (-1);
+		return (false);
+	}
+	contentLengthStr = contentLengthStr.substr(first, last - first);
+
+	contentLength = 0;
+	for (size_t i = 0; i < contentLengthStr.length(); ++i)
+	{
+		unsigned char digit;
+
+		if (!std::isdigit(static_cast<unsigned char>(contentLengthStr[i])))
+		{
+			ErrorResponce(400);
+			return (false);
+		}
+		digit = static_cast<unsigned char>(contentLengthStr[i] - '0');
+		if (contentLength >
+			(std::numeric_limits<size_t>::max() - digit) / 10)
+		{
+			ErrorResponce(413);
+			return (false);
+		}
+		contentLength = contentLength * 10 + digit;
 	}
 
-	// Negative Content-Length
-	if (contentLength < 0)
-	{
-		ErrorResponce(400);
-		return (-1);
-	}
-	_bodyLength = contentLength;
 	// Declared body is larger than configuration
-	if (static_cast<size_t>(contentLength) > static_cast<size_t>(maxBodySize))
+	if (contentLength > _maxBodyLength)
 	{
 		// 413 Payload Too Large, preferably
 		ErrorResponce(413);
-		return (-1);
+		return (false);
 	}
 
-	return (maxBodySize);
+	_bodyLength = contentLength;
+
+	return (true);
 }
 
 void	Client::getRequest()
@@ -134,32 +166,27 @@ void	Client::getRequest()
 				return;
         _startBodyHeader = _endRequestHeader + 4;
 
-		_maxBodyLength = maxBodyLength();
-
-		if (_maxBodyLength < 0)
-		{
-            _status = WRITING;
+		if (!maxBodyLength())
             return;
-        }
 
 		_bodyReceived = _request.size() - _startBodyHeader;
-
 		if (_bodyReceived > _bodyLength)
 		{
-			ErrorResponce(400);
+			ErrorResponce(413);
 			return;
 		}
         // Complete request
         if (_bodyReceived == _bodyLength)
         {
             _status = WRITING;
+			updatePollEvent(_fd, POLLOUT);
             return;
         }
 
         // Header complete, body still arriving
         _status = READING;
     }
-    else if (n == 0)
+	else
     {
         WebServ::closeConnection() = _fd;
     }
@@ -176,19 +203,21 @@ void	Client::handleRequest()
 
 void	Client::sendResponce()
 {
-	//std::cout << _res << std::endl;
 	if ( _resReady == false )
 	{
 		_res = _resHeader + _resBody;
 		_resReady = true;
 	}
-	ssize_t n = send(_fd, _res.c_str() + _sBytes, _res.size() - _sBytes, 0);
+	ssize_t n = send(_fd, _res.c_str() + _sBytes, _res.size() - _sBytes,
+		MSG_NOSIGNAL);
 	if (n > 0)
 	{
 		_sBytes += n;
 		if (_sBytes == static_cast<ssize_t>(_res.size()))
 			_status = TERMINATED;
 	}
+	else
+		WebServ::closeConnection() = _fd;
 }
 
 void	Client::action()
@@ -201,8 +230,30 @@ void	Client::action()
 		sendResponce();
 	else if (_status == TERMINATED)
 	{
+		// std::cout << "Connection terminated for client: "<< std::endl;
+		// std::cout << _request << std::endl;
+		// std::cout << "Response sent: " << std::endl;
+		// std::cout << _res << std::endl;
 		WebServ::_closeConnection = _fd;
 	}
+}
+
+void	Client::action(int fd, short revents)
+{
+	if (fd == _fd)
+		_idlePollTicks = 0;
+	if (fd == _cgiInputFd)
+		writeCGIInput();
+	else if (fd == _cgiFd)
+		readCGIOutput();
+	else
+		action();
+	(void)revents;
+}
+
+int	Client::getCgiInputFd()
+{
+	return (_cgiInputFd);
 }
 
 int	Client::getPort()
@@ -210,7 +261,7 @@ int	Client::getPort()
 	return (_port);
 }
 
-bool	Client::internalRedirection(std::string &location)
+bool	Client::internalRedirection(std::string &location, int error)
 {
 	const Location	*targetLocation;
 	std::string		path;
@@ -220,11 +271,14 @@ bool	Client::internalRedirection(std::string &location)
 	if (targetLocation == NULL)
 		return (false);
 	if (resolvePath(targetLocation, location, _serverOrigin, path) != PATH_FILE)
+	{
+		std::cout << path << std::endl;
 		return (false);
+	}
 	std::cout << "Internal redirection to: " << path << std::endl;
 	if (!getFileContent(path, body))
 		return (false);
-	_resHeader = getHeader(404, getMimeType(path), body.size());
+	_resHeader = getHeader(error, getMimeType(path), body.size());
 	_resBody = body;
 	_status = SENDING;
 	return (true);

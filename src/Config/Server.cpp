@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: thantoni <thantoni@student.42.fr>          +#+  +:+       +#+        */
+/*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 16:20:46 by thantoni          #+#    #+#             */
-/*   Updated: 2026/09/22 16:11:44 by thantoni         ###   ########.fr       */
+/*   Updated: 2026/10/04 22:12:11 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,8 +17,9 @@
 #include "Server.hpp"
 #include "Colors.hpp"
 #include "__internal__.hpp"
+#include <limits>
 
-Server::Server() : _hostIp(), _listenPort(), _serverDomains(), _pathRoot(), _indexFiles(), _clientMaxBodySize(1048576), _errorPages(), _locations() {	}
+Server::Server() : _hostIp(), _listenPort(), _serverDomains(), _pathRoot(), _indexFiles(), _clientMaxBodySize(std::numeric_limits<size_t>::max()), _errorPages(), _locations() {	}
 
 Server::~Server() { }
 
