@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/25 01:04:09 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/05 06:28:53 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/05 08:28:14 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,6 +24,16 @@
 #include <sstream>
 
 static const size_t CGI_TIMEOUT_TICKS = 10;
+
+static bool setCloseOnExec(int fd)
+{
+	int flags;
+
+	flags = fcntl(fd, F_GETFD);
+	if (flags == -1)
+		return (false);
+	return (fcntl(fd, F_SETFD, flags | FD_CLOEXEC) != -1);
+}
 
 static std::string makeCGIHeaderName(const std::string &headerName)
 {
@@ -168,11 +178,27 @@ void Client::executeCGI(const std::string &scriptPath,
 		ErrorResponce(500);
 		return ;
 	}
+	if (!setCloseOnExec(inPipe[0]) || !setCloseOnExec(inPipe[1]))
+	{
+		close(inPipe[0]);
+		close(inPipe[1]);
+		ErrorResponce(500);
+		return ;
+	}
 
 	if (pipe(outPipe) == -1)
 	{
 		close(inPipe[0]);
 		close(inPipe[1]);
+		ErrorResponce(500);
+		return ;
+	}
+	if (!setCloseOnExec(outPipe[0]) || !setCloseOnExec(outPipe[1]))
+	{
+		close(inPipe[0]);
+		close(inPipe[1]);
+		close(outPipe[0]);
+		close(outPipe[1]);
 		ErrorResponce(500);
 		return ;
 	}
@@ -307,26 +333,37 @@ bool Client::checkTimeout(bool pollTimedOut)
 			_cgiPid = -1;
 		return (false);
 	}
-	if (!_cgiRunning || _cgiPid == -1 || !pollTimedOut)
-		return (false);
-	++_cgiPollTicks;
-	if (_cgiPollTicks < CGI_TIMEOUT_TICKS)
-		return (false);
-	if (_cgiInputFd != -1)
+	if (_cgiRunning)
 	{
-		close(_cgiInputFd);
-		_cgiInputFd = -1;
+		if (!pollTimedOut)
+			return (false);
+		++_cgiPollTicks;
+		if (_cgiPollTicks < CGI_TIMEOUT_TICKS)
+			return (false);
+		if (_cgiInputFd != -1)
+		{
+			close(_cgiInputFd);
+			_cgiInputFd = -1;
+		}
+		if (_cgiFd != -1)
+		{
+			close(_cgiFd);
+			_cgiFd = -1;
+		}
+		kill(_cgiPid, SIGKILL);
+		waitpid(_cgiPid, NULL, 0);
+		_cgiPid = -1;
+		_cgiRunning = false;
+		ErrorResponce(504);
+		updatePollEvent(_fd, POLLOUT);
+		return (true);
 	}
-	if (_cgiFd != -1)
-	{
-		close(_cgiFd);
-		_cgiFd = -1;
-	}
-	kill(_cgiPid, SIGKILL);
-	waitpid(_cgiPid, NULL, 0);
-	_cgiPid = -1;
-	_cgiRunning = false;
-	ErrorResponce(504);
+	if (_status != READING || !pollTimedOut)
+		return (false);
+	++_idlePollTicks;
+	if (_idlePollTicks < CGI_TIMEOUT_TICKS)
+		return (false);
+	ErrorResponce(408);
 	updatePollEvent(_fd, POLLOUT);
 	return (true);
 }

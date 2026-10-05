@@ -20,6 +20,16 @@ int	WebServ::_closeConnection = 0;
 bool WebServ::_isRunning = true;
 Config	WebServ::_config;
 
+static bool setCloseOnExec(int fd)
+{
+	int flags;
+
+	flags = fcntl(fd, F_GETFD);
+	if (flags == -1)
+		return (false);
+	return (fcntl(fd, F_SETFD, flags | FD_CLOEXEC) != -1);
+}
+
 int	WebServ::newSocket(sa_family_t sFamily, in_port_t sPort, in_addr_t sAddr)
 {
 	int			fd;
@@ -30,8 +40,12 @@ int	WebServ::newSocket(sa_family_t sFamily, in_port_t sPort, in_addr_t sAddr)
 	addr.sin_port = htons(sPort);
 	addr.sin_addr.s_addr =  sAddr;
 	fd = socket(sFamily, SOCK_STREAM, 0);
-	if (!fd)
-		return (std::cerr << "Error socket creation (" << sPort << ")" << std::endl, fd);
+	if (fd == -1 || !setCloseOnExec(fd))
+	{
+		if (fd != -1)
+			close(fd);
+		return (std::cerr << "Error socket creation (" << sPort << ")" << std::endl, -1);
+	}
 	if(setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1)
 		return (std::cerr << "Error setsockopt (" << sPort << ")" << std::endl, -1);
 	fcntl(fd, F_SETFL, O_NONBLOCK);

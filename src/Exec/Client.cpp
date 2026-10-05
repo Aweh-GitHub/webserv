@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 01:52:12 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/05 06:28:29 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/05 08:33:49 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,6 +39,7 @@ Client::Client(int fd, int port, std::string &ip) :
 	_cgiFd = -1;
 	_cgiPid = -1;
 	_cgiPollTicks = 0;
+	_idlePollTicks = 0;
 }
 
 Client::~Client()
@@ -238,6 +239,8 @@ void	Client::action()
 
 void	Client::action(int fd, short revents)
 {
+	if (fd == _fd)
+		_idlePollTicks = 0;
 	if (fd == _cgiInputFd)
 		writeCGIInput();
 	else if (fd == _cgiFd)
@@ -257,7 +260,7 @@ int	Client::getPort()
 	return (_port);
 }
 
-bool	Client::internalRedirection(std::string &location)
+bool	Client::internalRedirection(std::string &location, int error)
 {
 	const Location	*targetLocation;
 	std::string		path;
@@ -267,11 +270,14 @@ bool	Client::internalRedirection(std::string &location)
 	if (targetLocation == NULL)
 		return (false);
 	if (resolvePath(targetLocation, location, _serverOrigin, path) != PATH_FILE)
+	{
+		std::cout << path << std::endl;
 		return (false);
+	}
 	std::cout << "Internal redirection to: " << path << std::endl;
 	if (!getFileContent(path, body))
 		return (false);
-	_resHeader = getHeader(404, getMimeType(path), body.size());
+	_resHeader = getHeader(error, getMimeType(path), body.size());
 	_resBody = body;
 	_status = SENDING;
 	return (true);

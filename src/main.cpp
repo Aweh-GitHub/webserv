@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/26 00:36:24 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/05 06:28:55 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/05 08:47:57 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -134,6 +134,7 @@ int	main(int ac, char **av)
 						delete srv._A[j];
 						srv._pollFds.erase(srv._pollFds.begin() + i);
 						srv._A.erase(srv._A.begin() + j);
+						close(fd);
 						removed = true;
 						break;
 					}
