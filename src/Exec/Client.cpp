@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 01:52:12 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/05 04:39:43 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/05 05:52:17 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -173,7 +173,7 @@ void	Client::getRequest()
         // Header complete, body still arriving
         _status = READING;
     }
-    else if (n == 0)
+	else
     {
         WebServ::closeConnection() = _fd;
     }
@@ -202,6 +202,8 @@ void	Client::sendResponce()
 		if (_sBytes == static_cast<ssize_t>(_res.size()))
 			_status = TERMINATED;
 	}
+	else
+		WebServ::closeConnection() = _fd;
 }
 
 void	Client::action()
@@ -214,10 +216,10 @@ void	Client::action()
 		sendResponce();
 	else if (_status == TERMINATED)
 	{
-		std::cout << "Connection terminated for client: "<< std::endl;
-		std::cout << _request << std::endl;
-		std::cout << "Response sent: " << std::endl;
-		std::cout << _res << std::endl;
+		// std::cout << "Connection terminated for client: "<< std::endl;
+		// std::cout << _request << std::endl;
+		// std::cout << "Response sent: " << std::endl;
+		// std::cout << _res << std::endl;
 		WebServ::_closeConnection = _fd;
 	}
 }
