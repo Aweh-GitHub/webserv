@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 01:05:24 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/05 04:05:37 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/05 06:28:49 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,6 +40,7 @@ class Client : public AAction
 		~Client();
 		void	action();
 		void	action(int fd, short revents);
+		bool	checkTimeout(bool pollTimedOut);
 		int		getCgiInputFd();
 		void	build();
 		int		getPort();
@@ -112,6 +113,7 @@ class Client : public AAction
 		int			_cgiInputFd;
 			size_t		_cgiInputOffset;
 		pid_t			_cgiPid;
+			size_t			_cgiPollTicks;
 		std::string		_cgiOutput;
 
 		// Redirect and index response helpers.

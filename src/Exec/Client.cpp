@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 01:52:12 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/05 05:52:17 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/05 06:28:29 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,9 +38,21 @@ Client::Client(int fd, int port, std::string &ip) :
 	_cgiInputOffset = 0;
 	_cgiFd = -1;
 	_cgiPid = -1;
+	_cgiPollTicks = 0;
 }
 
-Client::~Client() {}
+Client::~Client()
+{
+	if (_cgiInputFd != -1)
+		close(_cgiInputFd);
+	if (_cgiFd != -1)
+		close(_cgiFd);
+	if (_cgiPid != -1)
+	{
+		kill(_cgiPid, SIGKILL);
+		waitpid(_cgiPid, NULL, 0);
+	}
+}
 
 void	updatePollEvent(int fd, short events)
 {

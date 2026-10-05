@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/31 19:52:27 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/01 05:55:59 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/05 06:35:18 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -57,6 +57,8 @@ std::string	Client::getHeader(int code, std::string type, size_t length)
 		reason = "Bad Gateway";
 	else if (code == 503)
 		reason = "Service Unavailable";
+	else if (code == 504)
+    	reason = "Gateway Timeout";
 	header += "HTTP/1.1 " + ft_itoa(code) + " " + reason + "\r\n";
 	header += "Content-Type: " + type + "\r\n";
 	header += "Content-Length: " + ft_itoa(length) + "\r\n";
@@ -405,18 +407,14 @@ void Client::build()
 			{
 				scriptPath = path;
 
-				if (_requestLocation.empty() ||
-					_requestLocation[_requestLocation.length() - 1] != '/')
-				{
-					scriptName = _requestLocation;
-				}
-				else
-				{
-					std::string indexFile =
-						path.substr(path.rfind('/') + 1);
+				std::string indexFile =
+					path.substr(path.rfind('/') + 1);
 
-					scriptName = _requestLocation + indexFile;
-				}
+				scriptName = _requestLocation;
+				if (scriptName.empty() ||
+					scriptName[scriptName.length() - 1] != '/')
+					scriptName += '/';
+				scriptName += indexFile;
 
 				pathInfo.clear();
 

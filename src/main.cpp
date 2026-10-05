@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/26 00:36:24 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/05 02:41:29 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/05 06:28:55 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,7 +53,24 @@ int	main(int ac, char **av)
 	// 		std::cout << std::endl;
 	while (srv._isRunning)
 	{
-		poll(srv._pollFds.data(), srv._pollFds.size(), -1);
+		int pollResult = poll(srv._pollFds.data(), srv._pollFds.size(), 1000);
+		bool pollTimedOut = (pollResult == 0);
+		for (size_t j = 0; j < srv._A.size(); ++j)
+		{
+			int cgiFd = srv._A[j]->getCgiFd();
+			int cgiInputFd = srv._A[j]->getCgiInputFd();
+
+			if (!srv._A[j]->checkTimeout(pollTimedOut))
+				continue;
+			for (size_t k = 0; k < srv._pollFds.size(); )
+			{
+				if (srv._pollFds[k].fd == cgiFd ||
+					srv._pollFds[k].fd == cgiInputFd)
+					srv._pollFds.erase(srv._pollFds.begin() + k);
+				else
+					++k;
+			}
+		}
 		for (size_t i = 0; i < srv._pollFds.size(); )
 		{
 			const int fd = srv._pollFds[i].fd;

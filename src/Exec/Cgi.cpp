@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/25 01:04:09 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/03 05:33:45 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/05 06:28:53 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,6 +22,8 @@
 #include <cctype>
 #include <iostream>
 #include <sstream>
+
+static const size_t CGI_TIMEOUT_TICKS = 10;
 
 static std::string makeCGIHeaderName(const std::string &headerName)
 {
@@ -131,8 +133,11 @@ void Client::executeCGI(const std::string &scriptPath,
 	pid_t	pid;
 
 	std::string::size_type	dot;
+	std::string::size_type	slash;
 	std::string				extension;
 	std::string				executable;
+	std::string				scriptDirectory;
+	std::string				scriptFile;
 
 	dot = scriptPath.rfind('.');
 
@@ -186,6 +191,19 @@ void Client::executeCGI(const std::string &scriptPath,
 
 	if (pid == 0)
 	{
+		slash = scriptPath.rfind('/');
+		scriptDirectory = ".";
+		scriptFile = scriptPath;
+		if (slash != std::string::npos)
+		{
+			if (slash == 0)
+				scriptDirectory = "/";
+			else
+				scriptDirectory = scriptPath.substr(0, slash);
+			scriptFile = scriptPath.substr(slash + 1);
+		}
+		if (chdir(scriptDirectory.c_str()) == -1)
+			_exit(1);
 		dup2(inPipe[0], STDIN_FILENO);
 		dup2(outPipe[1], STDOUT_FILENO);
 
@@ -200,7 +218,7 @@ void Client::executeCGI(const std::string &scriptPath,
 
 		envStrings.push_back("GATEWAY_INTERFACE=CGI/1.1");
 		envStrings.push_back("REQUEST_METHOD=" + _headers["Method"]);
-		envStrings.push_back("SCRIPT_FILENAME=" + scriptPath);
+		envStrings.push_back("SCRIPT_FILENAME=" + scriptFile);
 		envStrings.push_back("SCRIPT_NAME=" + scriptName);
 		if (!pathInfo.empty())
 			envStrings.push_back("PATH_INFO=" + pathInfo);
@@ -240,7 +258,7 @@ void Client::executeCGI(const std::string &scriptPath,
 		char *argv[3];
 
 		argv[0] = const_cast<char *>(executable.c_str());
-		argv[1] = const_cast<char *>(scriptPath.c_str());
+		argv[1] = const_cast<char *>(scriptFile.c_str());
 		argv[2] = NULL;
 
 		execve(executable.c_str(), argv, &env[0]);
@@ -263,6 +281,7 @@ void Client::executeCGI(const std::string &scriptPath,
 
 	_cgiOutput.clear();
 	_cgiPid = pid;
+	_cgiPollTicks = 0;
 	_cgiRunning = true;
 	_cgiFd = outPipe[0];
 	WebServ::addToPoll(_cgiFd);
@@ -278,6 +297,38 @@ void Client::executeCGI(const std::string &scriptPath,
 	{
 		close(inPipe[1]);
 	}
+}
+
+bool Client::checkTimeout(bool pollTimedOut)
+{
+	if (!_cgiRunning && _cgiPid != -1)
+	{
+		if (waitpid(_cgiPid, NULL, WNOHANG) > 0)
+			_cgiPid = -1;
+		return (false);
+	}
+	if (!_cgiRunning || _cgiPid == -1 || !pollTimedOut)
+		return (false);
+	++_cgiPollTicks;
+	if (_cgiPollTicks < CGI_TIMEOUT_TICKS)
+		return (false);
+	if (_cgiInputFd != -1)
+	{
+		close(_cgiInputFd);
+		_cgiInputFd = -1;
+	}
+	if (_cgiFd != -1)
+	{
+		close(_cgiFd);
+		_cgiFd = -1;
+	}
+	kill(_cgiPid, SIGKILL);
+	waitpid(_cgiPid, NULL, 0);
+	_cgiPid = -1;
+	_cgiRunning = false;
+	ErrorResponce(504);
+	updatePollEvent(_fd, POLLOUT);
+	return (true);
 }
 
 void Client::writeCGIInput()
@@ -314,7 +365,6 @@ void Client::readCGIOutput()
 {
 	char	buffer[4096];
 	ssize_t	n;
-	int		status;
 
 	if (_cgiFd != -1)
 	{
@@ -330,15 +380,11 @@ void Client::readCGIOutput()
 			_cgiFd = -1;
 			if (!parseCGIResponse(_cgiOutput))
 			{
-				waitpid(_cgiPid, NULL, 0);
-				_cgiPid = -1;
 				_cgiRunning = false;
 				ErrorResponce(502);
 				updatePollEvent(_fd, POLLOUT);
 				return ;
 			}
-			waitpid(_cgiPid, &status, 0);
-			_cgiPid = -1;
 			_cgiRunning = false;
 			_status = SENDING;
 			updatePollEvent(_fd, POLLOUT);
