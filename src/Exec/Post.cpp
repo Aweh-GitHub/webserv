@@ -143,26 +143,12 @@ void	Client::handlePost(const std::string &endPath)
 	size_t		bodyStart;
 
 	filePath = endPath;
-
-	if (!_location->GetPathUploadStore().empty())
-	{
-		
-		fileName = getUploadFileName(_requestLocation);
-		if (fileName.empty())
-			return (ErrorResponce(400));
-		filePath = _location->GetPathUploadStore();
-		if (filePath[filePath.length() - 1] != '/')
-			filePath += '/';
-		filePath += fileName;
-	}
-
+	contentType = getValue("Content-Type", _headers);
 	bodyStart = _startBodyHeader;
 	if (bodyStart > _request.length() ||
 		_request.length() - bodyStart < static_cast<size_t>(_bodyLength))
 		return (ErrorResponce(400));
 	body = _request.substr(bodyStart, _bodyLength);
-	contentType = getValue("Content-Type", _headers);
-	std::cout << "Handling POST request for file: " << filePath << std::endl;
 	if (getMultipartBoundary(contentType, boundary))
 	{
 		if (!writeMultipartFiles(body, boundary,
@@ -175,6 +161,18 @@ void	Client::handlePost(const std::string &endPath)
 		return ;
 	}
 
+	if (!_location->GetPathUploadStore().empty())
+	{
+		fileName = getUploadFileName(_requestLocation);
+		if (fileName.empty())
+			return (ErrorResponce(400));
+		filePath = _location->GetPathUploadStore();
+		if (filePath[filePath.length() - 1] != '/')
+			filePath += '/';
+		filePath += fileName;
+	}
+
+	std::cout << "Handling POST request for file: " << filePath << std::endl;
 	file.open(filePath.c_str(), std::ios::binary | std::ios::trunc);
 	if (!file.is_open())
 		return (ErrorResponce(500));

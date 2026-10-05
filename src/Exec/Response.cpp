@@ -401,6 +401,8 @@ void Client::build()
 
 	if (pathType == PATH_DIRECTORY)
 	{
+		std::string directoryPath = path;
+
 		if (resolveIndex(path))
 		{
 			if (isCGI(path))
@@ -436,7 +438,7 @@ void Client::build()
 
 			if (method == "POST")
 			{
-				handlePost(path);
+				handlePost(directoryPath);
 				return ;
 			}
 
@@ -449,7 +451,7 @@ void Client::build()
 
 		if (method == "POST")
 		{
-			handlePost(path);
+			handlePost(directoryPath);
 			return ;
 		}
 

@@ -55,6 +55,9 @@ bool Client::parseHeaderLine(const std::string &line)
 	std::string name = line.substr(0, colon);
 	std::string value = line.substr(colon + 1);
 
+	if (name == "Method" || name == "Location" || name == "Version")
+		return (true);
+
 	// Remove leading whitespace
 	size_t first = value.find_first_not_of(" \t");
 

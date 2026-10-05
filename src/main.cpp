@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/26 00:36:24 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/05 08:47:57 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/05 09:01:27 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,16 +41,9 @@ int	main(int ac, char **av)
 		std::cerr << RED << e.what() << RST << '\n';
 	}
 	signal(SIGINT, handleSignal);
+	signal(SIGPIPE, SIG_IGN);
 	if (!srv.init())
 		return (1);
-	// std::cout << "Current poll fds: ";
-	// 		for (size_t k = 0; k < srv._pollFds.size(); ++k)
-	// 		{
-	// 			std::cout << srv._pollFds[k].fd;
-	// 			if (k < srv._pollFds.size() - 1)
-	// 				std::cout << ", ";
-	// 		}
-	// 		std::cout << std::endl;
 	while (srv._isRunning)
 	{
 		int pollResult = poll(srv._pollFds.data(), srv._pollFds.size(), 1000);
@@ -129,6 +122,16 @@ int	main(int ac, char **av)
 				#endif
 				for (size_t j = 0; j < srv._A.size(); j++)
 				{
+					bool isCgiFd = (fd == srv._A[j]->getCgiFd());
+					bool isCgiInputFd = (fd == srv._A[j]->getCgiInputFd());
+
+					if (isCgiFd || isCgiInputFd)
+					{
+						srv._A[j]->action(fd, revents);
+						srv._pollFds.erase(srv._pollFds.begin() + i);
+						removed = true;
+						break;
+					}
 					if (fd == srv._A[j]->getFd())
 					{
 						delete srv._A[j];
@@ -142,14 +145,6 @@ int	main(int ac, char **av)
 			}
 			if (!removed)
 				++i;
-			// std::cout << "Current poll fds: ";
-			// for (size_t k = 0; k < srv._pollFds.size(); ++k)
-			// {
-			// 	std::cout << srv._pollFds[k].fd;
-			// 	if (k < srv._pollFds.size() - 1)
-			// 		std::cout << ", ";
-			// }
-			// std::cout << std::endl;
 		}
 	}
 }

@@ -208,7 +208,8 @@ void	Client::sendResponce()
 		_res = _resHeader + _resBody;
 		_resReady = true;
 	}
-	ssize_t n = send(_fd, _res.c_str() + _sBytes, _res.size() - _sBytes, 0);
+	ssize_t n = send(_fd, _res.c_str() + _sBytes, _res.size() - _sBytes,
+		MSG_NOSIGNAL);
 	if (n > 0)
 	{
 		_sBytes += n;
