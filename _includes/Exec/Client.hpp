@@ -79,6 +79,8 @@ class Client : public AAction
 		void	executeCGI(const std::string &scriptPath,
 						const std::string &scriptName,
 						const std::string &pathInfo);
+		void	cleanupCGI(bool terminate);
+		void	failCGI(int error);
 		void	writeCGIInput();
 		void	readCGIOutput();
 		bool	parseCGIResponse(const std::string &cgiOutput);

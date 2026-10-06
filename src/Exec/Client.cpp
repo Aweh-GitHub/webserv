@@ -49,15 +49,7 @@ Client::Client(int fd, int port, std::string &ip) :
 
 Client::~Client()
 {
-	if (_cgiInputFd != -1)
-		close(_cgiInputFd);
-	if (_cgiFd != -1)
-		close(_cgiFd);
-	if (_cgiPid != -1)
-	{
-		kill(_cgiPid, SIGKILL);
-		waitpid(_cgiPid, NULL, 0);
-	}
+	cleanupCGI(true);
 }
 
 void	updatePollEvent(int fd, short events)
