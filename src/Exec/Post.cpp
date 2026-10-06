@@ -97,6 +97,9 @@ static bool writeMultipartFiles(const std::string &body,
 		contentEnd = body.find("\r\n" + marker, headersEnd + 4);
 		if (contentEnd == std::string::npos)
 			return (false);
+		if (fileName.empty())
+			fileName = body.substr(headersEnd + 4,
+				contentEnd - headersEnd - 4);
 
 		if (!fileName.empty())
 		{
