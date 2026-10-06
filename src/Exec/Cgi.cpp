@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/25 01:04:09 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/05 08:28:14 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/06 09:18:54 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -54,7 +54,6 @@ bool Client::parseCGIResponse(const std::string &cgiOutput)
 {
 	std::string::size_type	headerEnd;
 	std::string				headers;
-	//std::string				body;
 
 	headerEnd = cgiOutput.find("\r\n\r\n");
 
@@ -250,7 +249,6 @@ void Client::executeCGI(const std::string &scriptPath,
 			envStrings.push_back("PATH_INFO=" + pathInfo);
 		else
 			envStrings.push_back("PATH_INFO=/");
-		//envStrings.push_back("PATH_INFO=" + pathInfo);
 		envStrings.push_back("REQUEST_URI=" + _requestLocation);
 		envStrings.push_back("QUERY_STRING=" + _requestUrlQuery);
 		if (_headers.find("Content-Type") != _headers.end())
@@ -275,10 +273,7 @@ void Client::executeCGI(const std::string &scriptPath,
 			envStrings.push_back(envName + "=" + header->second);
 		}
 		for (size_t i = 0; i < envStrings.size(); ++i)
-		{
-			std::cerr << "Setting env: " << envStrings[i] << std::endl;
 			env.push_back(const_cast<char *>(envStrings[i].c_str()));
-		}
 		env.push_back(NULL);
 
 		char *argv[3];

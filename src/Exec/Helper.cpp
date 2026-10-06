@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/04 07:49:25 by lupayet           #+#    #+#             */
-/*   Updated: 2026/09/29 00:56:32 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/06 09:15:20 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,16 +18,16 @@
 std::string load_file(const std::string &path) {
 	std::ifstream file(path.c_str());
 	std::ostringstream content;
-	content << file.rdbuf(); // Read file into content
-	return content.str(); // Return the string
+	content << file.rdbuf();
+	return content.str();
 }
 
 int	getFileContent(std::string &filename, std::string &out)
 {
 	std::string	tmp;
 	tmp = load_file(filename);
-	if (!tmp.size())
-		return 0;
+	// if (!tmp.size())
+	// 	return 0;
 	out += tmp;
 	return 1;
 }

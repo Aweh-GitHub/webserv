@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: thantoni <thantoni@student.42.fr>          +#+  +:+       +#+        */
+/*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 01:52:12 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/06 18:45:17 by thantoni         ###   ########.fr       */
+/*   Updated: 2026/10/06 19:48:17 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -233,7 +233,7 @@ void	Client::action()
 		// std::cout << "Connection terminated for client: "<< std::endl;
 		// std::cout << _request << std::endl;
 		// std::cout << "Response sent: " << std::endl;
-		std::cout << _res << std::endl;
+		// std::cout << _res << std::endl;
 		WebServ::_closeConnection = _fd;
 	}
 }
