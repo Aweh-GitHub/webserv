@@ -35,7 +35,7 @@ The server uses non-blocking sockets and `poll()` to handle multiple connections
 
 ### Quick Start
 1. At root `make`
-2. Create your own config file following the "Config file" section below
+2. Create your own config file following the "Webserv Config" section below
 3. Start the web server `./webserv <your_config_file>.config`
 4. You can stop server at anytime with `Ctrl+C`
 
@@ -151,6 +151,10 @@ server: {
         pathRoot: "./www/site0/root"
         allowedMethods: "GET", "POST", "DELETE"
         autoIndex: "true"
+    }
+    location:{
+        name:"/redirlocal"
+        redirect:301, "/"
     }
 	location:{
 		name:"/redir"
