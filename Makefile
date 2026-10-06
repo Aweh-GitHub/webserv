@@ -76,4 +76,8 @@ fclean: clean
 
 re: fclean all
 
-.PHONY: all clean fclean re
+docker:
+	@test -f wordpress.sql || (echo "Error: wordpress.sql is required at the repository root" >&2; exit 1)
+	docker compose up --build
+
+.PHONY: all clean fclean re docker

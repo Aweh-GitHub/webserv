@@ -71,6 +71,25 @@ For example, the default configuration includes routes similar to:
 
 The server can be stopped with `Ctrl+C`.
 
+### Docker and WordPress
+
+Put the WordPress database dump at the repository root as `wordpress.sql`, then
+start Webserv and MariaDB. The Docker image compiles Webserv inside the
+container:
+
+```sh
+make docker
+```
+
+Webserv is available at `http://localhost:8080/wordpress`. The database is
+stored in the `aweh_mariadb_data` Docker volume and the SQL dump is imported
+when that volume is initialized. To recreate the database from the dump:
+
+```sh
+docker compose down -v
+make docker
+```
+
 ## Configuration
 
 Configuration files use the project's custom syntax. A server can define a listening address and port, accepted domains, a document root, index files, an upload limit, error pages, and nested locations.
