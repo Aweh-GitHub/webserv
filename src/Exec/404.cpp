@@ -14,6 +14,24 @@
 #include "core_webserv.hpp"
 #include <sstream>
 
+static void addAllowHeader(std::string &headers, const Location *location)
+{
+	const std::set<std::string> &allowedMethods =
+		location->GetAllowedMethods();
+	std::string allowHeader = "Allow: ";
+	std::set<std::string>::const_iterator method = allowedMethods.begin();
+
+	while (method != allowedMethods.end())
+	{
+		if (method != allowedMethods.begin())
+			allowHeader += ", ";
+		allowHeader += *method;
+		++method;
+	}
+	allowHeader += "\r\n";
+	headers.insert(headers.size() - 2, allowHeader);
+}
+
 void	Client::ErrorResponce(int error)
 {
 	std::string	path;
@@ -34,7 +52,11 @@ void	Client::ErrorResponce(int error)
 				path = defaultPage.str();
 			}
 			else
+			{
+				if (error == 405 && _location != NULL)
+					addAllowHeader(_resHeader, _location);
 				return ;
+			}
 		}
 
 	if (!getFileContent(path, body))
@@ -45,6 +67,8 @@ void	Client::ErrorResponce(int error)
 	}
 
 	_resHeader = getHeader(error, "text/html", body.length());
+	if (error == 405 && _location != NULL)
+		addAllowHeader(_resHeader, _location);
 	_resBody += body;
 	_status = SENDING;
 }

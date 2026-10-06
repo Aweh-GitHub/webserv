@@ -13,6 +13,17 @@
 #include "Config.hpp"
 #include <iostream>
 #include <algorithm>
+#include <cctype>
+
+static std::string lowerAscii(const std::string &value)
+{
+	std::string result = value;
+
+	for (size_t i = 0; i < result.length(); ++i)
+		result[i] = static_cast<char>(std::tolower(
+			static_cast<unsigned char>(result[i])));
+	return (result);
+}
 
 Config::Config() : _allServers(), _isInitialized(false) { }
 
@@ -33,16 +44,29 @@ bool	Config::GetIsInitialized() { return (this->_isInitialized); }
 
 const Server*	Config::TryFindServer(const std::string& hostIp, const size_t listenPort, const std::string& serverDomain) const
 {
+	const std::string normalizedDomain = lowerAscii(serverDomain);
+
 	for (size_t i = 0; i < this->_allServers.size(); i++)
 	{
 		Server currentServer;
+		std::vector<std::string> serverDomains;
 
 		currentServer = this->_allServers[i];
 		if (currentServer.GetHostIp() != hostIp)
 			continue;
 		if (currentServer.GetListenPort() != listenPort)
 			continue;
-		if (std::find(currentServer.GetServerDomains().begin(), currentServer.GetServerDomains().end(), serverDomain) == currentServer.GetServerDomains().end())
+		serverDomains = currentServer.GetServerDomains();
+		bool domainMatches = false;
+		for (size_t j = 0; j < serverDomains.size(); ++j)
+		{
+			if (lowerAscii(serverDomains[j]) == normalizedDomain)
+			{
+				domainMatches = true;
+				break;
+			}
+		}
+		if (!domainMatches)
 			continue;
 		return (&this->_allServers[i]);
 	}
