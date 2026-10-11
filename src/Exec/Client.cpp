@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 01:52:12 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/05 08:33:49 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/10 22:45:22 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -322,6 +322,8 @@ void	Client::sendResponce()
 		if (_sBytes == static_cast<ssize_t>(_res.size()))
 			_status = TERMINATED;
 	}
+	else if (n == 0)
+		return ;
 	else
 		WebServ::closeConnection() = _fd;
 }

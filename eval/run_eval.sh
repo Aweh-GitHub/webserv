@@ -148,7 +148,7 @@ fi
 if command -v siege > /dev/null && [ -n "$(server_pid)" ] && alive; then
 	av=$(siege -b -c 25 -t 10S "$A/" 2>&1 | grep -i availability | grep -o "[0-9.]*" | head -1)
 	if awk "BEGIN{exit !(${av:-0} > 99.5)}"; then ok "siege -b sur / : $av %"; else ko "siege -b sur /" "$av %"; fi
-	s=$(siege -b -c 25 -t 5S "$A/empty.html" 2>&1 | grep -i successful_transactions | grep -o "[0-9]*")
+	s=$(siege -b -c 25 -t 5S "$A/empty.html" 2>&1 | grep -i "successful transactions" | grep -o "[0-9]*")
 	if [ "${s:-0}" -gt 0 ]; then ok "siege -b sur page vide"; else ko "siege -b sur page vide" "0 transaction reussie"; fi
 	if alive; then ok "serveur vivant apres siege"; else ko "serveur vivant apres siege" "MORT"; fi
 else

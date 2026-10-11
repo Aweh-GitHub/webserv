@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/25 01:04:09 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/06 09:18:54 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/10 18:10:34 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -102,6 +102,34 @@ void Client::failCGI(int error)
 	cleanupCGI(true);
 	ErrorResponce(error);
 	updatePollEvent(_fd, POLLOUT);
+}
+
+bool Client::finishCGIProcess()
+{
+	int	childStatus;
+	pid_t	childResult;
+
+	childResult = waitpid(_cgiPid, &childStatus, WNOHANG);
+	if (childResult == 0)
+		return (false);
+	if (childResult != _cgiPid || !WIFEXITED(childStatus) ||
+		WEXITSTATUS(childStatus) != 0)
+	{
+		std::cerr << "CGI script exited with error." << std::endl;
+		failCGI(502);
+		return (true);
+	}
+	_cgiPid = -1;
+	if (!parseCGIResponse(_cgiOutput))
+	{
+		std::cerr << "Error parsing CGI response." << std::endl;
+		failCGI(502);
+		return (true);
+	}
+	_cgiRunning = false;
+	_status = SENDING;
+	updatePollEvent(_fd, POLLOUT);
+	return (true);
 }
 
 bool Client::parseCGIResponse(const std::string &cgiOutput)
@@ -403,6 +431,18 @@ void Client::executeCGI(const std::string &scriptPath,
 
 bool Client::checkTimeout(bool pollTimedOut)
 {
+	if (_cgiRunning && _cgiFd == -1 && _cgiPid != -1)
+	{
+		if (finishCGIProcess())
+			return (true);
+		if (!pollTimedOut)
+			return (false);
+		++_cgiPollTicks;
+		if (_cgiPollTicks < CGI_TIMEOUT_TICKS)
+			return (false);
+		failCGI(504);
+		return (true);
+	}
 	if (!_cgiRunning && _cgiPid != -1)
 	{
 		if (waitpid(_cgiPid, NULL, WNOHANG) > 0)
@@ -448,6 +488,7 @@ void Client::writeCGIInput()
 	}
 	else if (n < 0)
 	{
+		std::cerr << "Error writing to CGI input: " << strerror(errno) << std::endl;
 		failCGI(502);
 	}
 }
@@ -476,27 +517,12 @@ void Client::readCGIOutput()
 		{
 			close(_cgiFd);
 			_cgiFd = -1;
-			int childStatus;
-			pid_t childResult = waitpid(_cgiPid, &childStatus, WNOHANG);
-			if (childResult <= 0 || !WIFEXITED(childStatus) ||
-				WEXITSTATUS(childStatus) != 0)
-			{
-				failCGI(502);
-				return;
-			}
-			_cgiPid = -1;
-			if (!parseCGIResponse(_cgiOutput))
-			{
-				failCGI(502);
-				return ;
-			}
-			_cgiRunning = false;
-			_status = SENDING;
-			updatePollEvent(_fd, POLLOUT);
+			finishCGIProcess();
 			return ;
 		}
 		else
 		{
+			std::cerr << "Error reading from CGI output: " << strerror(errno) << std::endl;
 			failCGI(502);
 			return ;
 		}

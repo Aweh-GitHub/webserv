@@ -81,6 +81,7 @@ class Client : public AAction
 						const std::string &pathInfo);
 		void	cleanupCGI(bool terminate);
 		void	failCGI(int error);
+		bool	finishCGIProcess();
 		void	writeCGIInput();
 		void	readCGIOutput();
 		bool	parseCGIResponse(const std::string &cgiOutput);

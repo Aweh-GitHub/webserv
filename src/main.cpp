@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/26 00:36:24 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/05 09:01:27 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/11 14:27:43 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 #include "WebServ.hpp"
 #include "Colors.hpp"
 #include "ConfigBuilder.hpp"
+#include <cerrno>
 #include <limits>
 
 void handleSignal(int sig)
@@ -47,6 +48,14 @@ int	main(int ac, char **av)
 	while (srv._isRunning)
 	{
 		int pollResult = poll(srv._pollFds.data(), srv._pollFds.size(), 1000);
+		if (pollResult == -1)
+		{
+			if (errno == EINTR)
+				continue;
+			std::cerr << "Error poll" << std::endl;
+			WebServ::quit();
+			break;
+		}
 		bool pollTimedOut = (pollResult == 0);
 		for (size_t j = 0; j < srv._A.size(); ++j)
 		{
