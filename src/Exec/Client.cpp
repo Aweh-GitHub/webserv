@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 01:52:12 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/11 20:44:29 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/11 20:52:46 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -383,7 +383,7 @@ bool	Client::internalRedirection(std::string &location, int error)
 		std::cout << path << std::endl;
 		return (false);
 	}
-	std::cout << "Internal redirection to: " << path << std::endl;
+	//std::cout << "Internal redirection to: " << path << std::endl;
 	getFileContent(path, body);
 	_resHeader = getHeader(error, getMimeType(path), body.size());
 	_resBody = body;
