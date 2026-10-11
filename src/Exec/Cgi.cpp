@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/25 01:04:09 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/10 18:10:34 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/11 19:42:25 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,7 +22,6 @@
 #include <cctype>
 #include <iostream>
 #include <sstream>
-#include <set>
 
 static const size_t CGI_TIMEOUT_TICKS = 10;
 static const size_t CGI_MAX_OUTPUT = 10 * 1024 * 1024;
@@ -161,7 +160,6 @@ bool Client::parseCGIResponse(const std::string &cgiOutput)
 	int statusCode = 200;
 	std::string statusText = "OK";
 	bool statusSeen = false;
-	std::set<std::string> responseHeaders;
 
 	std::istringstream stream(headers);
 	std::string line;
@@ -212,10 +210,6 @@ bool Client::parseCGIResponse(const std::string &cgiOutput)
 		{
 			if (name == "Content-Length" || name == "Transfer-Encoding")
 				continue;
-			if (responseHeaders.find(name) != responseHeaders.end() &&
-				name != "Set-Cookie")
-				return (false);
-			responseHeaders.insert(name);
 			_resHeader += name + ": " + value + "\r\n";
 		}
 	}

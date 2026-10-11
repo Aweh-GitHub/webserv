@@ -16,7 +16,9 @@ COPY docker.config ./docker.config
 COPY template ./template
 COPY www ./www
 
-RUN make
+RUN mkdir -p www/site0/root/uploads
+
+RUN make re
 
 RUN sed -i \
     -e "s#http://bob:8080/wordpress#http://localhost:8080/wordpress#g" \

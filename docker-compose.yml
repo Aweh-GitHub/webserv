@@ -1,6 +1,6 @@
 services:
   database:
-    image: mariadb:11
+    image: docker.io/library/mariadb:11
     environment:
       MARIADB_DATABASE: wordpress
       MARIADB_USER: wordpress

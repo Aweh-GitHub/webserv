@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/18 02:20:46 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/05 08:20:50 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/11 19:31:06 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -69,35 +69,36 @@ void	Client::ErrorResponce(int error)
 	_resHeader = getHeader(error, "text/html", body.length());
 	if (error == 405 && _location != NULL)
 		addAllowHeader(_resHeader, _location);
+	_resBody.clear();
 	_resBody += body;
 	_status = SENDING;
 }
 
-void	Client::notFoundRes(int errCode, std::map<size_t, std::string> errorPages)
-{
-	std::string		path;
-	std::string		body;
+// void	Client::notFoundRes(int errCode, std::map<size_t, std::string> errorPages)
+// {
+// 	std::string		path;
+// 	std::string		body;
 
-	std::map<size_t, std::string>::iterator it = errorPages.find(errCode);
+// 	std::map<size_t, std::string>::iterator it = errorPages.find(errCode);
 
-	if (it != errorPages.end())
-		path = "." + it->second;
-	else
-	{
-		std::ostringstream defaultPage;
+// 	if (it != errorPages.end())
+// 		path = "." + it->second;
+// 	else
+// 	{
+// 		std::ostringstream defaultPage;
 
-		defaultPage << "./template/" << errCode << ".html";
-		path = defaultPage.str();
-	}
+// 		defaultPage << "./template/" << errCode << ".html";
+// 		path = defaultPage.str();
+// 	}
 
-	std::cout << path << std::endl;
-	if (!getFileContent(path, body))
-	{
-		body = "<html><body><h1>" 
-			+ ft_itoa(errCode) 
-			+ "</h1></body></html>";
-	}
+// 	std::cout << path << std::endl;
+// 	if (!getFileContent(path, body))
+// 	{
+// 		body = "<html><body><h1>" 
+// 			+ ft_itoa(errCode) 
+// 			+ "</h1></body></html>";
+// 	}
 
-	_res = getHeader(errCode, "text/html", body.length());
-	_res += body;
-}
+// 	_res = getHeader(errCode, "text/html", body.length());
+// 	_res += body;
+// }

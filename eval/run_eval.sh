@@ -42,7 +42,14 @@ expect_body() {
 }
 
 # requete brute (pour ce que curl ne sait pas envoyer)
-raw() { printf "$1" | timeout 3 nc -q 2 127.0.0.1 8080 2>/dev/null | head -1 | tr -d '\r'; }
+#raw() { printf "$1" | timeout 3 nc -q 2 127.0.0.1 8080 2>/dev/null | head -1 | tr -d '\r'; }
+
+raw() {
+    printf '%b' "$1" |
+        timeout 5 nc -w 3 127.0.0.1 8080 2>/dev/null |
+        head -1 | tr -d '\r'
+}
+
 
 alive() { curl -s -m 3 -o /dev/null "$A/"; }
 
