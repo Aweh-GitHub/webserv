@@ -59,6 +59,7 @@ class Client : public AAction
 		// Routing, locations, and filesystem path resolution.
 		bool	setServerLocation();
 		bool	maxBodyLength();
+		int	decodeChunkedBody();
 		bool	internalRedirection(std::string &location, int error);
 		bool	isCGI(const std::string &path) const;
 		PathType	resolvePath(const Location *location, 
@@ -78,6 +79,9 @@ class Client : public AAction
 		void	executeCGI(const std::string &scriptPath,
 						const std::string &scriptName,
 						const std::string &pathInfo);
+		void	cleanupCGI(bool terminate);
+		void	failCGI(int error);
+		bool	finishCGIProcess();
 		void	writeCGIInput();
 		void	readCGIOutput();
 		bool	parseCGIResponse(const std::string &cgiOutput);
@@ -108,6 +112,11 @@ class Client : public AAction
 		size_t			_bodyReceived;
 		size_t			_bodyLength;
 		size_t			_maxBodyLength;
+		bool		_chunkedBody;
+		int		_chunkedState;
+		size_t		_chunkedParseOffset;
+		size_t		_chunkedChunkSize;
+		std::string	_chunkedDecodedBody;
 		bool			_cgiRunning;
 		bool			_resReady;
 		int			_cgiInputFd;

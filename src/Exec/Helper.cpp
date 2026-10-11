@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/04 07:49:25 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/06 09:15:20 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/11 18:59:35 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 #include <fstream>
 #include <sstream>
 #include <map>
+#include <sys/stat.h>
 
 std::string load_file(const std::string &path) {
 	std::ifstream file(path.c_str());
@@ -25,11 +26,15 @@ std::string load_file(const std::string &path) {
 int	getFileContent(std::string &filename, std::string &out)
 {
 	std::string	tmp;
+    struct stat	st;
+    
+	if (stat(filename.c_str(), &st) != 0)
+		return (0);
 	tmp = load_file(filename);
-	// if (!tmp.size())
-	// 	return 0;
+	if (!tmp.size())
+	 	return (-1);
 	out += tmp;
-	return 1;
+	return (1);
 }
 
 std::string	ft_itoa(int n)

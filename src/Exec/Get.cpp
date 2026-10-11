@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/04 08:02:25 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/01 05:54:16 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/11 18:59:33 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,6 @@
 
 bool Client::handleGet(std::string &path)
 {
-	std::string	err("./template/404.html");
 	if (!getFileContent(path, _resBody))
 	{
 		ErrorResponce(404);

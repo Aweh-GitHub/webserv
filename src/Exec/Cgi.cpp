@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/25 01:04:09 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/06 09:18:54 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/11 19:42:25 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,6 +24,7 @@
 #include <sstream>
 
 static const size_t CGI_TIMEOUT_TICKS = 10;
+static const size_t CGI_MAX_OUTPUT = 10 * 1024 * 1024;
 
 static bool setCloseOnExec(int fd)
 {
@@ -50,10 +51,93 @@ static std::string makeCGIHeaderName(const std::string &headerName)
 	return (name);
 }
 
+static bool isCGIHeaderToken(char character)
+{
+	return (std::isalnum(static_cast<unsigned char>(character)) ||
+		character == '!' || character == '#' || character == '$' ||
+		character == '%' || character == '&' || character == '\'' ||
+		character == '*' || character == '+' || character == '-' ||
+		character == '.' || character == '^' || character == '_' ||
+		character == '`' || character == '|' || character == '~');
+}
+
+static bool isValidCGIHeaderValue(const std::string &value)
+{
+	for (size_t i = 0; i < value.length(); ++i)
+	{
+		unsigned char character = static_cast<unsigned char>(value[i]);
+		if (character < 32 && character != '\t')
+			return (false);
+		if (character == 127)
+			return (false);
+	}
+	return (true);
+}
+
+void Client::cleanupCGI(bool terminate)
+{
+	if (_cgiInputFd != -1)
+	{
+		close(_cgiInputFd);
+		_cgiInputFd = -1;
+	}
+	if (_cgiFd != -1)
+	{
+		close(_cgiFd);
+		_cgiFd = -1;
+	}
+	if (_cgiPid != -1)
+	{
+		if (terminate)
+			kill(_cgiPid, SIGKILL);
+		waitpid(_cgiPid, NULL, 0);
+		_cgiPid = -1;
+	}
+	_cgiRunning = false;
+}
+
+void Client::failCGI(int error)
+{
+	cleanupCGI(true);
+	ErrorResponce(error);
+	updatePollEvent(_fd, POLLOUT);
+}
+
+bool Client::finishCGIProcess()
+{
+	int	childStatus;
+	pid_t	childResult;
+
+	childResult = waitpid(_cgiPid, &childStatus, WNOHANG);
+	if (childResult == 0)
+		return (false);
+	if (childResult != _cgiPid || !WIFEXITED(childStatus) ||
+		WEXITSTATUS(childStatus) != 0)
+	{
+		std::cerr << "CGI script exited with error." << std::endl;
+		failCGI(502);
+		return (true);
+	}
+	_cgiPid = -1;
+	if (!parseCGIResponse(_cgiOutput))
+	{
+		std::cerr << "Error parsing CGI response." << std::endl;
+		failCGI(502);
+		return (true);
+	}
+	_cgiRunning = false;
+	_status = SENDING;
+	updatePollEvent(_fd, POLLOUT);
+	return (true);
+}
+
 bool Client::parseCGIResponse(const std::string &cgiOutput)
 {
 	std::string::size_type	headerEnd;
 	std::string				headers;
+
+	_resHeader.clear();
+	_resBody.clear();
 
 	headerEnd = cgiOutput.find("\r\n\r\n");
 
@@ -75,6 +159,7 @@ bool Client::parseCGIResponse(const std::string &cgiOutput)
 
 	int statusCode = 200;
 	std::string statusText = "OK";
+	bool statusSeen = false;
 
 	std::istringstream stream(headers);
 	std::string line;
@@ -86,28 +171,45 @@ bool Client::parseCGIResponse(const std::string &cgiOutput)
 
 		std::string::size_type colon = line.find(':');
 
-		if (colon == std::string::npos)
-			continue;
+		if (colon == std::string::npos || colon == 0)
+			return (false);
 
 		std::string name = line.substr(0, colon);
 		std::string value = line.substr(colon + 1);
+		for (size_t i = 0; i < name.length(); ++i)
+		{
+			if (!isCGIHeaderToken(name[i]))
+				return (false);
+		}
 
 		while (!value.empty() && value[0] == ' ')
 			value.erase(0, 1);
+		if (!isValidCGIHeaderValue(value))
+			return (false);
 
 		if (name == "Status")
 		{
-			std::istringstream statusStream(value);
-
-			statusStream >> statusCode;
-
-			std::getline(statusStream, statusText);
-
+			if (statusSeen || value.length() < 3 ||
+				!std::isdigit(static_cast<unsigned char>(value[0])) ||
+				!std::isdigit(static_cast<unsigned char>(value[1])) ||
+				!std::isdigit(static_cast<unsigned char>(value[2])) ||
+				(value.length() > 3 && value[3] != ' '))
+				return (false);
+			statusCode = (value[0] - '0') * 100 +
+				(value[1] - '0') * 10 + (value[2] - '0');
+			if (statusCode < 100 || statusCode > 599)
+				return (false);
+			statusText = value.substr(3);
 			while (!statusText.empty() && statusText[0] == ' ')
 				statusText.erase(0, 1);
+			if (statusText.empty())
+				return (false);
+			statusSeen = true;
 		}
 		else
 		{
+			if (name == "Content-Length" || name == "Transfer-Encoding")
+				continue;
 			_resHeader += name + ": " + value + "\r\n";
 		}
 	}
@@ -132,6 +234,7 @@ bool Client::parseCGIResponse(const std::string &cgiOutput)
 
 	return (true);
 }
+
 
 void Client::executeCGI(const std::string &scriptPath,
 						const std::string &scriptName,
@@ -322,6 +425,18 @@ void Client::executeCGI(const std::string &scriptPath,
 
 bool Client::checkTimeout(bool pollTimedOut)
 {
+	if (_cgiRunning && _cgiFd == -1 && _cgiPid != -1)
+	{
+		if (finishCGIProcess())
+			return (true);
+		if (!pollTimedOut)
+			return (false);
+		++_cgiPollTicks;
+		if (_cgiPollTicks < CGI_TIMEOUT_TICKS)
+			return (false);
+		failCGI(504);
+		return (true);
+	}
 	if (!_cgiRunning && _cgiPid != -1)
 	{
 		if (waitpid(_cgiPid, NULL, WNOHANG) > 0)
@@ -335,22 +450,7 @@ bool Client::checkTimeout(bool pollTimedOut)
 		++_cgiPollTicks;
 		if (_cgiPollTicks < CGI_TIMEOUT_TICKS)
 			return (false);
-		if (_cgiInputFd != -1)
-		{
-			close(_cgiInputFd);
-			_cgiInputFd = -1;
-		}
-		if (_cgiFd != -1)
-		{
-			close(_cgiFd);
-			_cgiFd = -1;
-		}
-		kill(_cgiPid, SIGKILL);
-		waitpid(_cgiPid, NULL, 0);
-		_cgiPid = -1;
-		_cgiRunning = false;
-		ErrorResponce(504);
-		updatePollEvent(_fd, POLLOUT);
+		failCGI(504);
 		return (true);
 	}
 	if (_status != READING || !pollTimedOut)
@@ -382,14 +482,8 @@ void Client::writeCGIInput()
 	}
 	else if (n < 0)
 	{
-		close(_cgiInputFd);
-		_cgiInputFd = -1;
-		kill(_cgiPid, SIGKILL);
-		waitpid(_cgiPid, NULL, 0);
-		_cgiPid = -1;
-		_cgiRunning = false;
-		ErrorResponce(500);
-		updatePollEvent(_fd, POLLOUT);
+		std::cerr << "Error writing to CGI input: " << strerror(errno) << std::endl;
+		failCGI(502);
 	}
 }
 
@@ -405,32 +499,25 @@ void Client::readCGIOutput()
 		std::cout << "Read " << n << " bytes from CGI output." << std::endl;
 		#endif
 		if (n > 0)
+		{
+			if (_cgiOutput.size() + static_cast<size_t>(n) > CGI_MAX_OUTPUT)
+			{
+				failCGI(502);
+				return;
+			}
 			_cgiOutput.append(buffer, n);
+		}
 		else if (n == 0)
 		{
 			close(_cgiFd);
 			_cgiFd = -1;
-			if (!parseCGIResponse(_cgiOutput))
-			{
-				_cgiRunning = false;
-				ErrorResponce(502);
-				updatePollEvent(_fd, POLLOUT);
-				return ;
-			}
-			_cgiRunning = false;
-			_status = SENDING;
-			updatePollEvent(_fd, POLLOUT);
+			finishCGIProcess();
 			return ;
 		}
 		else
 		{
-			close(_cgiFd);
-			_cgiFd = -1;
-			waitpid(_cgiPid, NULL, 0);
-			_cgiPid = -1;
-			_cgiRunning = false;
-			ErrorResponce(500);
-			updatePollEvent(_fd, POLLOUT);
+			std::cerr << "Error reading from CGI output: " << strerror(errno) << std::endl;
+			failCGI(502);
 			return ;
 		}
 	}

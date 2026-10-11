@@ -42,7 +42,14 @@ expect_body() {
 }
 
 # requete brute (pour ce que curl ne sait pas envoyer)
-raw() { printf "$1" | timeout 3 nc -q 2 127.0.0.1 8080 2>/dev/null | head -1 | tr -d '\r'; }
+#raw() { printf "$1" | timeout 3 nc -q 2 127.0.0.1 8080 2>/dev/null | head -1 | tr -d '\r'; }
+
+raw() {
+    printf '%b' "$1" |
+        timeout 5 nc -w 3 127.0.0.1 8080 2>/dev/null |
+        head -1 | tr -d '\r'
+}
+
 
 alive() { curl -s -m 3 -o /dev/null "$A/"; }
 
@@ -148,7 +155,7 @@ fi
 if command -v siege > /dev/null && [ -n "$(server_pid)" ] && alive; then
 	av=$(siege -b -c 25 -t 10S "$A/" 2>&1 | grep -i availability | grep -o "[0-9.]*" | head -1)
 	if awk "BEGIN{exit !(${av:-0} > 99.5)}"; then ok "siege -b sur / : $av %"; else ko "siege -b sur /" "$av %"; fi
-	s=$(siege -b -c 25 -t 5S "$A/empty.html" 2>&1 | grep -i successful_transactions | grep -o "[0-9]*")
+	s=$(siege -b -c 25 -t 5S "$A/empty.html" 2>&1 | grep -i "successful transactions" | grep -o "[0-9]*")
 	if [ "${s:-0}" -gt 0 ]; then ok "siege -b sur page vide"; else ko "siege -b sur page vide" "0 transaction reussie"; fi
 	if alive; then ok "serveur vivant apres siege"; else ko "serveur vivant apres siege" "MORT"; fi
 else

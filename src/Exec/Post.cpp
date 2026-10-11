@@ -6,13 +6,12 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/22 14:57:48 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/01 05:53:29 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/10 22:41:35 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Client.hpp"
 #include <cstdio>
-#include <errno.h>
 #include <fstream>
 
 static bool getMultipartBoundary(const std::string &contentType,
@@ -207,18 +206,13 @@ void	Client::handleDelete(const std::string &endPath)
 			filePath += '/';
 		filePath += fileName;
 	}
+
+	struct stat	st;
+	if (stat(filePath.c_str(), &st) != 0)
+		return (ErrorResponce(404));
+
 	if (std::remove(filePath.c_str()) != 0)
-	{
-		if (errno == ENOENT)
-		{
-			_resHeader = "HTTP/1.1 404 Not Found\r\n";
-			_resHeader += "Content-Length: 0\r\n";
-			_resHeader += "Connection: close\r\n\r\n";
-			_status = SENDING;
-			return ;
-		}
 		return (ErrorResponce(500));
-	}
 
 	_resHeader = "HTTP/1.1 204 No Content\r\n";
 	_resHeader += "Content-Length: 0\r\n";

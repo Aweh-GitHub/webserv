@@ -48,6 +48,25 @@ make fclean  # Delete all compilation files (.o + executable)
 make re      # Rebuild: Clean + Build 
 ```
 
+### Docker and WordPress
+
+Put the WordPress database dump at the repository root as `wordpress.sql`, then
+start Webserv and MariaDB. The Docker image compiles Webserv inside the
+container:
+
+```sh
+make docker
+```
+
+Webserv is available at `http://localhost:8080/wordpress`. The database is
+stored in the `aweh_mariadb_data` Docker volume and the SQL dump is imported
+when that volume is initialized. To recreate the database from the dump:
+
+```sh
+docker compose down -v
+make docker
+```
+
 ### Webserv Config
 Config files handle multiple servers declarations
 

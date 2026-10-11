@@ -6,7 +6,7 @@
 /*   By: lupayet <lupayet@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/27 01:52:12 by lupayet           #+#    #+#             */
-/*   Updated: 2026/10/06 19:48:17 by lupayet          ###   ########.fr       */
+/*   Updated: 2026/10/11 20:44:29 by lupayet          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,6 +31,11 @@ Client::Client(int fd, int port, std::string &ip) :
 	_endRequestHeader = 0;
 	_bodyReceived = 0;
 	_bodyLength = 0;
+	_maxBodyLength = 0;
+	_chunkedBody = false;
+	_chunkedState = 0;
+	_chunkedParseOffset = 0;
+	_chunkedChunkSize = 0;
 	_startBodyHeader = 0;
 	_status = READING;
 	_cgiRunning = false;
@@ -44,15 +49,7 @@ Client::Client(int fd, int port, std::string &ip) :
 
 Client::~Client()
 {
-	if (_cgiInputFd != -1)
-		close(_cgiInputFd);
-	if (_cgiFd != -1)
-		close(_cgiFd);
-	if (_cgiPid != -1)
-	{
-		kill(_cgiPid, SIGKILL);
-		waitpid(_cgiPid, NULL, 0);
-	}
+	cleanupCGI(true);
 }
 
 void	updatePollEvent(int fd, short events)
@@ -85,6 +82,7 @@ bool	Client::setServerLocation()
 bool	Client::maxBodyLength()
 {
 	std::map<std::string, std::string>::const_iterator contentLengthHeader;
+	std::map<std::string, std::string>::const_iterator transferEncodingHeader;
 	std::string	contentLengthStr;
 	size_t		contentLength;
 	size_t		first;
@@ -94,6 +92,13 @@ bool	Client::maxBodyLength()
 		_maxBodyLength = _location->GetClientMaxBodySize();
 	else
 		_maxBodyLength = _serverOrigin->GetClientMaxBodySize();
+	transferEncodingHeader = _headers.find("Transfer-Encoding");
+	if (transferEncodingHeader != _headers.end() &&
+		transferEncodingHeader->second.find("chunked") != std::string::npos)
+	{
+		_chunkedBody = true;
+		return (true);
+	}
 
 	contentLengthHeader = _headers.find("Content-Length");
 	if (contentLengthHeader == _headers.end())
@@ -144,6 +149,88 @@ bool	Client::maxBodyLength()
 	return (true);
 }
 
+int	Client::decodeChunkedBody()
+{
+	while (_chunkedState != 4)
+	{
+		if (_chunkedState == 0)
+		{
+			std::string::size_type lineEnd = _request.find("\r\n",
+				_chunkedParseOffset);
+			if (lineEnd == std::string::npos)
+				return (0);
+			std::string sizeLine = _request.substr(_chunkedParseOffset,
+				lineEnd - _chunkedParseOffset);
+			std::string::size_type extension = sizeLine.find(';');
+			if (extension != std::string::npos)
+				sizeLine.erase(extension);
+			if (sizeLine.empty())
+				return (-1);
+			_chunkedChunkSize = 0;
+			for (size_t i = 0; i < sizeLine.length(); ++i)
+			{
+				size_t digit;
+				if (sizeLine[i] >= '0' && sizeLine[i] <= '9')
+					digit = static_cast<size_t>(sizeLine[i] - '0');
+				else if (sizeLine[i] >= 'a' && sizeLine[i] <= 'f')
+					digit = static_cast<size_t>(sizeLine[i] - 'a' + 10);
+				else if (sizeLine[i] >= 'A' && sizeLine[i] <= 'F')
+					digit = static_cast<size_t>(sizeLine[i] - 'A' + 10);
+				else
+					return (-1);
+				if (_chunkedChunkSize >
+					(std::numeric_limits<size_t>::max() - digit) / 16)
+					return (3);
+				_chunkedChunkSize = _chunkedChunkSize * 16 + digit;
+			}
+			_chunkedParseOffset = lineEnd + 2;
+			if (_chunkedChunkSize > _maxBodyLength)
+				return (3);
+			_chunkedState = (_chunkedChunkSize == 0) ? 3 : 1;
+		}
+		else if (_chunkedState == 1)
+		{
+			size_t available = _request.size() - _chunkedParseOffset;
+			size_t toCopy = std::min(available, _chunkedChunkSize);
+			_chunkedDecodedBody.append(_request, _chunkedParseOffset, toCopy);
+			_chunkedParseOffset += toCopy;
+			_chunkedChunkSize -= toCopy;
+			if (_chunkedDecodedBody.size() > _maxBodyLength)
+				return (3);
+			if (_chunkedChunkSize != 0)
+				return (0);
+			_chunkedState = 2;
+		}
+		else if (_chunkedState == 2)
+		{
+			if (_request.size() - _chunkedParseOffset < 2)
+				return (0);
+			if (_request.compare(_chunkedParseOffset, 2, "\r\n") != 0)
+				return (-1);
+			_chunkedParseOffset += 2;
+			_chunkedState = 0;
+		}
+		else
+		{
+			if (_request.compare(_chunkedParseOffset, 2, "\r\n") == 0)
+			{
+				_chunkedParseOffset += 2;
+				_chunkedState = 4;
+			}
+			else
+			{
+				std::string::size_type trailersEnd = _request.find(
+					"\r\n\r\n", _chunkedParseOffset);
+				if (trailersEnd == std::string::npos)
+					return (0);
+				_chunkedParseOffset = trailersEnd + 4;
+				_chunkedState = 4;
+			}
+		}
+	}
+	return (1);
+}
+
 void	Client::getRequest()
 {
 	char buffer[4096];
@@ -168,6 +255,25 @@ void	Client::getRequest()
 
 		if (!maxBodyLength())
             return;
+		if (_chunkedBody)
+		{
+			if (_chunkedState == 0 && _chunkedParseOffset == 0)
+				_chunkedParseOffset = _startBodyHeader;
+			int chunkStatus = decodeChunkedBody();
+			if (chunkStatus == 3)
+				return (ErrorResponce(413));
+			if (chunkStatus < 0)
+				return (ErrorResponce(400));
+			if (chunkStatus == 0)
+				return;
+			_request.erase(_startBodyHeader);
+			_request.append(_chunkedDecodedBody);
+			_bodyReceived = _chunkedDecodedBody.size();
+			_bodyLength = _bodyReceived;
+			_status = WRITING;
+			updatePollEvent(_fd, POLLOUT);
+			return;
+		}
 
 		_bodyReceived = _request.size() - _startBodyHeader;
 		if (_bodyReceived > _bodyLength)
@@ -216,6 +322,8 @@ void	Client::sendResponce()
 		if (_sBytes == static_cast<ssize_t>(_res.size()))
 			_status = TERMINATED;
 	}
+	else if (n == 0)
+		return ;
 	else
 		WebServ::closeConnection() = _fd;
 }
@@ -276,8 +384,7 @@ bool	Client::internalRedirection(std::string &location, int error)
 		return (false);
 	}
 	std::cout << "Internal redirection to: " << path << std::endl;
-	if (!getFileContent(path, body))
-		return (false);
+	getFileContent(path, body);
 	_resHeader = getHeader(error, getMimeType(path), body.size());
 	_resBody = body;
 	_status = SENDING;
