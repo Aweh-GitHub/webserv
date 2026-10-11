@@ -4,8 +4,7 @@
 !README.md
 !*.cpp
 !*.hpp
-!com.txt
-!*/
+!com.txts
 !*.config
 !/www/
 !/www/**
