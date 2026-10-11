@@ -5,6 +5,7 @@ RUN apt-get update \
         build-essential \
         php-cgi \
         php-mysql \
+        python3 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /webserv
@@ -13,6 +14,7 @@ COPY Makefile ./Makefile
 COPY _includes ./_includes
 COPY src ./src
 COPY docker.config ./docker.config
+COPY rendu.config ./rendu.config
 COPY template ./template
 COPY www ./www
 
@@ -24,8 +26,8 @@ RUN sed -i \
     -e "s#http://bob:8080/wordpress#http://localhost:8080/wordpress#g" \
     -e "s#CHANGE_THIS_TO_A_STRONG_PASSWORD#wordpress#g" \
     -e "s#DB_HOST', 'localhost#DB_HOST', 'database#g" \
-    www/site0/wordpress/wp-config.php
+    www/site1/wordpress/wp-config.php
 
 EXPOSE 8080
 
-CMD ["./webserv", "docker.config"]
+CMD ["./webserv", "rendu.config"]

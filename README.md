@@ -25,6 +25,19 @@ The server uses non-blocking sockets and `poll()` to handle multiple connections
 - CGI support, including PHP through `php-cgi`
 - Event-driven connection management with `poll()`
 
+### Uploading files with curl
+
+Use `@` before the local path when sending a file as a multipart form field:
+
+```sh
+curl -i -X POST -F "file=@index.html" http://localhost:8080/uploads/
+```
+
+Without `@`, curl sends the literal text as a normal form field. For example,
+`-F "file=index.html"` uploads the text `index.html`, not the contents of the
+local file. The server stores the uploaded file using its basename, so the
+command above creates `www/uploads/index.html` when using `rendu.config`.
+
 ## Instructions
 
 ### Requirements
